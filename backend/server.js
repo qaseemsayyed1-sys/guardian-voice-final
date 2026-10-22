@@ -3,7 +3,11 @@ const cors = require('cors');
 const axios = require('axios');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 const GROQ_API_KEY = "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"; 
