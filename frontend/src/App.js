@@ -34,7 +34,12 @@ function App() {
       window.speechSynthesis.getVoices();
     }
     axios.post(RESET_URL)
-      .then(() => console.log("Backend session reset"))
+      .then(() => {
+        setIsGuest(false);
+        setShowCodeBox(false);
+        setShowVetoPanel(false);
+        setIsLockdown(false);
+      })
       .catch(err => console.log("Reset failed"));
   }, []);
 
@@ -334,50 +339,4 @@ function App() {
 
               {!showEmergency && showCodeBox && (
               <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-200">
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                  </div>
-                  <h2 className="text-stone-900 font-bold text-2xl mb-2 tracking-tight">Verification Required</h2>
-                  <p className="text-stone-500 mb-8 text-sm">Please read this code aloud to proceed.</p>
-                  <div className="bg-[#F4F1EA] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-stone-900 font-bold border border-stone-300 shadow-inner">
-                  {generatedCode}
-                  </div>
-              </div>
-              )}
-
-              {!showEmergency && showVetoPanel && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-200">
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  </div>
-                  <h2 className="text-stone-900 font-bold text-2xl mb-1 tracking-tight">Pending Approval</h2>
-                  <p className="text-stone-500 text-sm mb-8">A high-risk action requires your attention.</p>
-                  
-                  <div className="flex gap-4 justify-center">
-                  <button onClick={handleAccept} className="bg-stone-200 hover:bg-stone-300 text-stone-700 px-6 py-4 rounded-xl font-bold w-full transition-all text-sm tracking-wide">
-                      ACCEPT
-                  </button>
-                  <button onClick={handleVeto} className="bg-red-800 hover:bg-red-900 text-white px-6 py-4 rounded-xl font-bold w-full shadow-lg shadow-red-800/20 transition-all transform hover:scale-[1.02] text-sm tracking-wide">
-                      VETO
-                  </button>
-                  </div>
-              </div>
-              )}
-
-              {!showEmergency && !showCodeBox && !showVetoPanel && (
-              <div className="text-center text-stone-400">
-                  <div className="w-24 h-24 mx-auto mb-6 bg-[#FDFCF8] rounded-full flex items-center justify-center shadow-sm border border-stone-200">
-                      <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                  </div>
-                  <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
-                  <p className="text-sm">No pending risks detected.</p>
-              </div>
-              )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default App;
+                  <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb
