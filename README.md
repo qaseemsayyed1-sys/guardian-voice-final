@@ -22,3 +22,14 @@ Guardian Voice categorizes tasks into two levels:
 *   **Backend:** Node.js, Express.js
 *   **AI Model:** Groq API (Llama 3)
 *   **Deployment:** Vercel (Frontend), Render (Backend)
+
+* 🌐 Live Demo
+
+· Live App: https://guardian-voice-final.vercel.app
+· Demo Video: [Link to your YouTube Video]
+
+---
+
+Built with ❤️ by Qaseem Sayyed (First-Year B.Tech IT Student)
+And 
+Md Saad Shaikh (First-Year B.Tech IT Student)
