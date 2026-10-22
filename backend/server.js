@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GROQ_API_KEY = "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"; 
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 let currentSecurityCode = "8429"; 
 let isGuestMode = false;
