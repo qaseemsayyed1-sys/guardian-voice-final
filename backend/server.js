@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "gsk_YOUR_ACTUAL_API_KEY_HERE"; 
+const GROQ_API_KEY = "gsk_YOUR_ACTUAL_API_KEY_HERE"; 
 
 let currentSecurityCode = "8429"; 
 let isGuestMode = false;
@@ -84,7 +84,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         if (!GROQ_API_KEY || GROQ_API_KEY === "gsk_YOUR_ACTUAL_API_KEY_HERE") {
-            throw new Error("API Key is missing");
+            throw new Error("API Key missing");
         }
 
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
@@ -101,7 +101,7 @@ app.post('/api/chat', async (req, res) => {
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
 
     } catch (error) {
-        console.error("Groq API Error:", error.message);
+        console.error("Groq Error:", error.message);
         return res.json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline).", uiUpdate: {} });
     }
 });
