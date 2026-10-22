@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MY_SECRET_KEY = "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"; 
+const GROQ_API_KEY = "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"; 
 
 let currentSecurityCode = "8429"; 
 let isGuestMode = false;
@@ -86,12 +86,12 @@ app.post('/api/chat', async (req, res) => {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
             model: "llama-3.1-8b-instant",
             messages: [
-                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
+                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice." },
                 { role: "user", content: message }
             ],
             temperature: 0.7
         }, {
-            headers: { 'Authorization': `Bearer ${MY_SECRET_KEY}`, 'Content-Type': 'application/json' }
+            headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' }
         });
 
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
