@@ -3,11 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 
 const app = express();
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json());
 
 const GROQ_API_KEY = "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"; 
@@ -88,9 +84,9 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "llama-3.1-8b-instant",
+            model: "openai/gpt-oss-120b",
             messages: [
-                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice." },
+                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
                 { role: "user", content: message }
             ],
             temperature: 0.7
@@ -100,15 +96,16 @@ app.post('/api/chat', async (req, res) => {
 
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
 
-} catch (error) {
-    console.error("GROQ_DEBUG_STATUS:", error.response?.status);
-    console.error("GROQ_DEBUG_BODY:", JSON.stringify(error.response?.data || error.message));
-    
-    return res.status(502).json({ 
-        reply: "AI service error. Check Render logs.", 
-        uiUpdate: {} 
-    });
+    } catch (error) {
+        console.error("GROQ_DEBUG_STATUS:", error.response?.status);
+        console.error("GROQ_DEBUG_BODY:", JSON.stringify(error.response?.data || error.message));
+        
+        return res.status(502).json({ 
+            reply: "AI service error. Check Render logs.", 
+            uiUpdate: {} 
+        });
     }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Guardian Backend running on port ${PORT}`));
