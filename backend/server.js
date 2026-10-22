@@ -100,7 +100,7 @@ app.post('/api/chat', async (req, res) => {
 
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
 
-    } catch (error) {
+} catch (error) {
     console.error("GROQ_DEBUG_STATUS:", error.response?.status);
     console.error("GROQ_DEBUG_BODY:", JSON.stringify(error.response?.data || error.message));
     
