@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "gsk_YOUR_ACTUAL_API_KEY_HERE"; 
 
 let currentSecurityCode = "8429"; 
 let isGuestMode = false;
@@ -83,10 +83,14 @@ app.post('/api/chat', async (req, res) => {
     if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) return res.json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
 
     try {
+        if (!GROQ_API_KEY || GROQ_API_KEY === "gsk_YOUR_ACTUAL_API_KEY_HERE") {
+            throw new Error("API Key is missing");
+        }
+
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
             model: "llama3-8b-8192",
             messages: [
-                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice." },
+                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
                 { role: "user", content: message }
             ],
             temperature: 0.7
@@ -97,6 +101,7 @@ app.post('/api/chat', async (req, res) => {
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
 
     } catch (error) {
+        console.error("Groq API Error:", error.message);
         return res.json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline).", uiUpdate: {} });
     }
 });

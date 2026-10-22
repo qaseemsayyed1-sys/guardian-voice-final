@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'https://guardian-voice-backend.onrender.com/api/chat';
-const RESET_URL = 'https://guardian-voice-backend.onrender.com/api/reset';
+const BACKEND_URL = 'https://guardian-voice-final.onrender.com/api/chat';
+const RESET_URL = 'https://guardian-voice-final.onrender.com/api/reset';
 
 function App() {
   const [messages, setMessages] = useState([
