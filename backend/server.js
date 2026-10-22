@@ -15,9 +15,10 @@ let isMusicPlaying = false;
 let isAwaitingPassphrase = false;
 
 app.post('/api/reset', (req, res) => {
-    if (isOwnerVerified) return res.json({ status: "already_verified" });
-    isGuestMode = true; 
+    isOwnerVerified = false;
+    isGuestMode = false;
     isAwaitingPassphrase = false;
+    currentSecurityCode = "8429"; 
     return res.json({ status: "reset" });
 });
 
@@ -84,7 +85,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "openai/gpt-oss-120b",
+            model: "llama-3.1-8b-instant",
             messages: [
                 { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
                 { role: "user", content: message }
