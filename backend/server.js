@@ -101,9 +101,14 @@ app.post('/api/chat', async (req, res) => {
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
 
     } catch (error) {
-        return res.json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline).", uiUpdate: {} });
+    console.error("GROQ_DEBUG_STATUS:", error.response?.status);
+    console.error("GROQ_DEBUG_BODY:", JSON.stringify(error.response?.data || error.message));
+    
+    return res.status(502).json({ 
+        reply: "AI service error. Check Render logs.", 
+        uiUpdate: {} 
+    });
     }
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Guardian Backend running on port ${PORT}`));
