@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GROQ_API_KEY = "process.env.GROQ_API_KEY";
+const MY_SECRET_KEY = "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"; 
 
 let currentSecurityCode = "8429"; 
 let isGuestMode = false;
@@ -91,7 +91,7 @@ app.post('/api/chat', async (req, res) => {
             ],
             temperature: 0.7
         }, {
-            headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' }
+            headers: { 'Authorization': `Bearer ${MY_SECRET_KEY}`, 'Content-Type': 'application/json' }
         });
 
         return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
