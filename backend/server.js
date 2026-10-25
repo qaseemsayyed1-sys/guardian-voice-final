@@ -85,7 +85,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "openai/gpt-oss-20b",
+            model: "openai/gpt-oss-120b",
             messages: [
                 { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
                 { role: "user", content: message }
