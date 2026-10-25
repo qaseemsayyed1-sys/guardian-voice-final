@@ -1,112 +1,121 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
+
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
+
 app.use(cors());
-app.use(express.json());
-
-const GROQ_API_KEY = "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"; 
-
-let currentSecurityCode = "8429"; 
-let isGuestMode = false;
-let isOwnerVerified = false; 
-let isMusicPlaying = false;
-let isAwaitingPassphrase = false;
-
-app.post('/api/reset', (req, res) => {
-    isOwnerVerified = false;
-    isGuestMode = false;
-    isAwaitingPassphrase = false;
-    currentSecurityCode = "8429"; 
-    return res.json({ status: "reset" });
-});
-
-app.post('/api/chat', async (req, res) => {
-    const { message } = req.body;
-    const msgLower = message.toLowerCase().trim();
-
-    if (msgLower.includes("dark") || msgLower.includes("night") || msgLower.includes("nite")) { 
-        isOwnerVerified = true;
-        isGuestMode = false;
-        isAwaitingPassphrase = false;
-        return res.json({ reply: "Passphrase verified. Welcome back, Owner. You now have full access.", uiUpdate: { guestMode: false } });
-    }
-
-    if (isAwaitingPassphrase) {
-        isAwaitingPassphrase = false;
-        return res.json({ reply: "Incorrect passphrase. Access denied.", uiUpdate: {} });
-    }
-
-    if (msgLower.includes("owner") || msgLower.includes("admin") || msgLower.includes("my house")) {
-        isAwaitingPassphrase = true;
-        return res.json({ reply: "Voice verification required. Please speak the secret passphrase to confirm your identity.", uiUpdate: {} });
-    }
-
-    if (msgLower.includes("unlock") && !isOwnerVerified) {
-        isGuestMode = true;
-        return res.json({ reply: "CRITICAL ALERT: Unauthorized access attempt detected. Initiating system lockdown protocol.", uiUpdate: { triggerLockdown: true, guestMode: true } });
-    }
-
-    if (msgLower.includes("unlock") && isOwnerVerified) {
-        currentSecurityCode = Math.floor(1000 + Math.random() * 9000).toString();
-        return res.json({ reply: "I cannot execute that directly. I have generated a new 4-digit code on your screen. Please read it back to me to confirm.", uiUpdate: { showCode: true, code: currentSecurityCode } });
-    }
-
-    if (msgLower.includes(currentSecurityCode) && isOwnerVerified) {
-        return res.json({ reply: "Code verified. I am proposing the action to the owner for final approval.", uiUpdate: { showPending: true } });
-    }
-
-    if (msgLower === "veto") return res.json({ reply: "Action vetoed by owner.", uiUpdate: { clearPending: true } });
-    if (msgLower === "accept") return res.json({ reply: "Action approved.", uiUpdate: { clearPending: true } });
-    if (msgLower === "9999") return res.json({ reply: "Code verified. Executing unlock sequence. (Note: Silent SOS alert sent to authorities).", uiUpdate: { showPending: true, silentSOS: true } });
-
-    if (msgLower.includes("stop") || msgLower.includes("pause")) {
-        if (isMusicPlaying) {
-            isMusicPlaying = false;
-            return res.json({ reply: "Music stopped.", uiUpdate: { stopMusic: true } });
-        }
-    }
-
-    if (msgLower.includes("volume up") || msgLower.includes("louder")) return res.json({ reply: "Increasing volume.", uiUpdate: { volumeUp: true } });
-    if (msgLower.includes("volume down") || msgLower.includes("quieter")) return res.json({ reply: "Decreasing volume.", uiUpdate: { volumeDown: true } });
-
-    if (msgLower.includes("music") || msgLower.includes("play") || msgLower.includes("song")) {
-        isMusicPlaying = true;
-        let genre = "Jazz Vibes";
-        let trackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"; 
-        if (msgLower.includes("rock")) { genre = "Rock Anthems"; trackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"; } 
-        else if (msgLower.includes("lofi") || msgLower.includes("chill") || msgLower.includes("study")) { genre = "Chill Lofi Beats"; trackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"; }
-        return res.json({ reply: `Playing some ${genre} right now.`, uiUpdate: { playMusic: true, trackUrl: trackUrl, playlistName: genre } });
-    }
-    
-    if (msgLower.includes("weather")) return res.json({ reply: "It is currently 24 degrees and sunny outside.", uiUpdate: {} });
-    if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) return res.json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
-
-    try {
-        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-            model: "openai/gpt-oss-120b",
-            messages: [
-                { role: "system", content: "You are Guardian Voice, a highly intelligent smart home AI assistant. Keep your answers short, smart, and helpful. You can answer general knowledge questions, tell jokes, or give advice. However, always remember you are a security assistant." },
-                { role: "user", content: message }
-            ],
-            temperature: 0.7
-        }, {
-            headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' }
-        });
-
-        return res.json({ reply: response.data.choices[0].message.content, uiUpdate: {} });
-
-    } catch (error) {
-        console.error("GROQ_DEBUG_STATUS:", error.response?.status);
-        console.error("GROQ_DEBUG_BODY:", JSON.stringify(error.response?.data || error.message));
-        
-        return res.status(502).json({ 
-            reply: "AI service error. Check Render logs.", 
-            uiUpdate: {} 
-        });
-    }
-});
+app.use(express.json({ limit: "1mb" }));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Guardian Backend running on port ${PORT}`));
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = "gemini-3.8-flash";
+
+app.get("/", (req, res) => {
+  res.status(200).send("Guardian Voice Backend is running");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+app.post("/api/reset", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Guardian Voice is ready",
+    uiUpdate: {}
+  });
+});
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const message =
+      typeof req.body.message === "string"
+        ? req.body.message.trim()
+        : "";
+
+    if (!message) {
+      return res.status(400).json({
+        reply: "Please enter a message.",
+        uiUpdate: {}
+      });
+    }
+
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is not configured");
+
+      return res.status(500).json({
+        reply: "AI service is not configured. Please try again later.",
+        uiUpdate: {}
+      });
+    }
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        systemInstruction: {
+          parts: [
+            {
+              text: "You are Guardian Voice, a helpful, intelligent and friendly AI assistant. Answer clearly, accurately and naturally. If you do not know something, say so honestly."
+            }
+          ]
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: message }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048
+        }
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY
+        },
+        timeout: 30000
+      }
+    );
+
+    const reply =
+      response.data.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("")
+        .trim();
+
+    if (!reply) {
+      return res.status(502).json({
+        reply: "I could not generate a response. Please try again.",
+        uiUpdate: {}
+      });
+    }
+
+    return res.status(200).json({
+      reply,
+      uiUpdate: {}
+    });
+  } catch (error) {
+    console.error(
+      "GEMINI_ERROR_STATUS:",
+      error.response?.status || "No HTTP status"
+    );
+
+    console.error(
+      "GEMINI_ERROR_BODY:",
+      JSON.stringify(error.response?.data || error.message)
+    );
+
+    return res.status(502).json({
+      reply: "AI service is temporarily unavailable. Please try again shortly.",
+      uiUpdate: {}
+    });
+  }
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Guardian Backend running on port ${PORT}`);
+});
