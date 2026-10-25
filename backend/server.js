@@ -69,7 +69,7 @@ app.post("/api/chat", async (req, res) => {
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2048
+          maxOutputTokens: 512
         }
       },
       {
@@ -77,7 +77,7 @@ app.post("/api/chat", async (req, res) => {
           "Content-Type": "application/json",
           "x-goog-api-key": GEMINI_API_KEY
         },
-        timeout: 30000
+        timeout: 60000
       }
     );
 
