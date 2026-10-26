@@ -9,9 +9,8 @@ app.use(express.json({ limit: '1mb' }));
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Google ka latest working model
 const GEMINI_MODELS = [
-    "gemini-2.5-flash"
+    "gemini-2.5-flash",
     "gemini-2.5-flash-lite"
 ];
 
@@ -51,7 +50,6 @@ app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
     const msgLower = message.toLowerCase().trim();
 
-    // 1. Passphrase Check
     if (msgLower.includes("dark") || msgLower.includes("night") || msgLower.includes("nite")) { 
         isOwnerVerified = true;
         isGuestMode = false;
@@ -62,7 +60,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 2. Incorrect Passphrase
     if (isAwaitingPassphrase) {
         isAwaitingPassphrase = false;
         return res.status(200).json({ 
@@ -71,7 +68,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 3. Owner Login Trigger
     if (msgLower.includes("owner") || msgLower.includes("admin") || msgLower.includes("my house")) {
         isAwaitingPassphrase = true;
         return res.status(200).json({ 
@@ -80,7 +76,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 4. Unauthorized Unlock (Lockdown)
     if (msgLower.includes("unlock") && !isOwnerVerified) {
         isGuestMode = true;
         return res.status(200).json({ 
@@ -89,7 +84,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 5. Authorized Unlock (Generate Code)
     if (msgLower.includes("unlock") && isOwnerVerified) {
         currentSecurityCode = Math.floor(1000 + Math.random() * 9000).toString();
         return res.status(200).json({ 
@@ -98,7 +92,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 6. Code Verification
     if (msgLower.includes(currentSecurityCode) && isOwnerVerified) {
         return res.status(200).json({ 
             reply: "Code verified. I am proposing the action to the owner for final approval.", 
@@ -106,11 +99,9 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 7. Veto / Accept
     if (msgLower === "veto") return res.status(200).json({ reply: "Action vetoed by owner.", uiUpdate: { clearPending: true } });
     if (msgLower === "accept") return res.status(200).json({ reply: "Action approved.", uiUpdate: { clearPending: true } });
     
-    // 8. Silent SOS
     if (msgLower === "9999") {
         return res.status(200).json({ 
             reply: "Code verified. Executing unlock sequence. (Note: Silent SOS alert sent to authorities).", 
@@ -118,7 +109,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 9. Low-Risk: Music
     if (msgLower.includes("music") || msgLower.includes("play") || msgLower.includes("song")) {
         isMusicPlaying = true;
         return res.status(200).json({ 
@@ -135,18 +125,14 @@ app.post('/api/chat', async (req, res) => {
         return res.status(200).json({ reply: "Nothing is currently playing.", uiUpdate: {} });
     }
 
-    // 10. Low-Risk: Weather
     if (msgLower.includes("weather")) {
         return res.status(200).json({ reply: "It is currently 24 degrees and sunny outside.", uiUpdate: {} });
     }
 
-    // 11. Emergency / Help
     if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) {
         return res.status(200).json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
     }
 
-    // --- 12. GEMINI AI FALLBACK ---
-    
     if (!GEMINI_API_KEY) {
         return res.status(200).json({
             reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline - API Key missing).",
