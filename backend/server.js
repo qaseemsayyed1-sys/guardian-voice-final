@@ -9,8 +9,9 @@ app.use(express.json({ limit: '1mb' }));
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Google ka latest working model
 const GEMINI_MODELS = [
-    "gemini-1.5-flash",
+    "gemini-2.5-flash"
 ];
 
 let isGuestMode = false;
@@ -143,10 +144,10 @@ app.post('/api/chat', async (req, res) => {
         return res.status(200).json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
     }
 
-    // --- 12. IF NOT A COMMAND, USE GEMINI AI ---
+    // --- 12. GEMINI AI FALLBACK ---
     
     if (!GEMINI_API_KEY) {
-        return res.status(500).json({
+        return res.status(200).json({
             reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline - API Key missing).",
             uiUpdate: {}
         });
