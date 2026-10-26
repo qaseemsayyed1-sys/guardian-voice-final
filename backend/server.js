@@ -11,7 +11,6 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const GEMINI_MODELS = [
     "gemini-1.5-flash",
-    "gemini-1.5-pro"
 ];
 
 let isGuestMode = false;
