@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -19,6 +18,7 @@ let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
 let currentSecurityCode = "8429";
+let isMusicPlaying = false;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -39,6 +39,7 @@ app.post('/api/reset', (req, res) => {
     isGuestMode = false;
     isAwaitingPassphrase = false;
     currentSecurityCode = "8429";
+    isMusicPlaying = false;
     res.status(200).json({
         success: true,
         message: "Chat reset successfully"
@@ -116,15 +117,42 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // --- IF NOT A SECURITY COMMAND, USE GEMINI AI ---
-    
-    if (!GEMINI_API_KEY) {
-        return res.status(500).json({
-            error: "AI API key is missing. Configure GEMINI_API_KEY in Render."
+    // 9. Low-Risk: Music
+    if (msgLower.includes("music") || msgLower.includes("play") || msgLower.includes("song")) {
+        isMusicPlaying = true;
+        return res.status(200).json({ 
+            reply: `Playing some Jazz Vibes right now.`, 
+            uiUpdate: { playMusic: true, trackUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", playlistName: "Jazz Vibes" } 
         });
     }
 
-    const contents = [];
+    if (msgLower.includes("stop") || msgLower.includes("pause")) {
+        if (isMusicPlaying) {
+            isMusicPlaying = false;
+            return res.status(200).json({ reply: "Music stopped.", uiUpdate: { stopMusic: true } });
+        }
+        return res.status(200).json({ reply: "Nothing is currently playing.", uiUpdate: {} });
+    }
+
+    // 10. Low-Risk: Weather
+    if (msgLower.includes("weather")) {
+        return res.status(200).json({ reply: "It is currently 24 degrees and sunny outside.", uiUpdate: {} });
+    }
+
+    // 11. Emergency / Help
+    if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) {
+        return res.status(200).json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
+    }
+
+    // --- 12. IF NOT A COMMAND, USE GEMINI AI ---
+    
+    if (!GEMINI_API_KEY) {
+        return res.status(500).json({
+            reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline - API Key missing).",
+            uiUpdate: {}
+        });
+    }
+
     const requestBody = {
         systemInstruction: {
             parts: [{ text: "You are Guardian Voice, a helpful and calm AI assistant. Keep answers short and helpful." }]
@@ -170,7 +198,11 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.error("All Gemini models failed:", lastError?.response?.data || lastError?.message);
-    return res.status(503).json({ error: "AI is temporarily busy. Please try again in a few seconds." });
+    
+    return res.status(200).json({ 
+        reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI is temporarily busy).", 
+        uiUpdate: {} 
+    });
 });
 
 app.listen(PORT, () => {
