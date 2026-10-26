@@ -12,6 +12,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Google ka latest working model
 const GEMINI_MODELS = [
     "gemini-2.5-flash"
+    "gemini-2.5-flash-lite"
 ];
 
 let isGuestMode = false;
