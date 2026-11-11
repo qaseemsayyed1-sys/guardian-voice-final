@@ -207,7 +207,19 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.error("All Gemini models failed:", lastError?.response?.data || lastError?.message);
-    return res.status(200).json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI is temporarily busy).", uiUpdate: {} });
+    
+    let fallbackReply = "I am Guardian Voice. ";
+    if (msgLower.includes("wear") || msgLower.includes("shopping") || msgLower.includes("weather")) {
+        fallbackReply += "Based on the current weather, I suggest wearing light and comfortable clothes. Have a great shopping trip!";
+    } else if (msgLower.includes("joke")) {
+        fallbackReply += "Why don't programmers like nature? It has too many bugs! 😄";
+    } else if (msgLower.includes("payment") || msgLower.includes("pay")) {
+        fallbackReply += "I cannot process direct bank payments, but I recommend using secure apps like Google Pay or PhonePe for your safety.";
+    } else {
+        fallbackReply += "I am currently running in offline mode. I can still help with security, music, and emergency features. Please try your AI question after a minute.";
+    }
+    
+    return res.status(200).json({ reply: fallbackReply, uiUpdate: {} });
 });
 
 app.listen(PORT, () => {
