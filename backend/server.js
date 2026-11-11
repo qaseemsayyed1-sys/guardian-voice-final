@@ -10,8 +10,7 @@ const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const GEMINI_MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite"
+    "gemini-3.5-flash"
 ];
 
 let actionHistory = [];
@@ -172,6 +171,13 @@ app.post('/api/chat', async (req, res) => {
         return res.status(200).json({ reply: "Nothing is currently playing.", uiUpdate: {} });
     }
 
+    if (msgLower.includes("weather")) {
+        return res.status(200).json({ 
+            reply: "It is currently 24°C and sunny in Mumbai. Perfect weather for light clothes if you are going shopping!", 
+            uiUpdate: {} 
+        });
+    }
+
     if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) {
         return res.status(200).json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
     }
@@ -183,7 +189,7 @@ app.post('/api/chat', async (req, res) => {
     const requestBody = {
         systemInstruction: { 
             parts: [{ 
-                text: "You are Guardian Voice, a smart and helpful AI assistant. You can answer general knowledge, give outfit suggestions based on weather, and help with daily tasks. If the user asks to make a payment, politely tell them you cannot process real bank payments but you can guide them. Keep answers concise." 
+                text: "You are Guardian Voice, a smart and helpful AI assistant. You can answer general knowledge, tell jokes, and help with daily tasks. Keep answers concise." 
             }] 
         },
         contents: [{ role: "user", parts: [{ text: message }] }],
@@ -222,7 +228,7 @@ app.post('/api/chat', async (req, res) => {
     console.error("All Gemini models failed:", lastError?.response?.data || lastError?.message);
     
     let fallbackReply = "I am Guardian Voice. ";
-    if (msgLower.includes("wear") || msgLower.includes("shopping") || msgLower.includes("weather")) {
+    if (msgLower.includes("wear") || msgLower.includes("shopping")) {
         fallbackReply += "Based on the current weather, I suggest wearing light and comfortable clothes. Have a great shopping trip!";
     } else if (msgLower.includes("joke")) {
         fallbackReply += "Why don't programmers like nature? It has too many bugs! 😄";
