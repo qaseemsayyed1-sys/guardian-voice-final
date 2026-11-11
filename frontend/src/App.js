@@ -457,11 +457,18 @@ function App() {
               {!showEmergency && !showCodeBox && !showVetoPanel && (
               <div className="w-full max-w-md space-y-4">
                   <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 flex flex-col items-center text-center">
-                      <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-4">
-                          <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                      <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-4 relative">
+                          <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                          <span className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full animate-ping"></span>
+                          <span className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
                       </div>
-                      <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
-                      <p className="text-sm text-stone-400">No pending risks detected.</p>
+                      <p className="text-lg font-semibold text-stone-800 mb-1">System Secure</p>
+                      <p className="text-sm text-stone-500 mb-4">All systems operational. No pending risks.</p>
+                      
+                      <div className="w-full bg-stone-50 rounded-xl p-3 border border-stone-100 flex items-center justify-between text-xs">
+                          <span className="text-stone-500 font-medium">Last Scan:</span>
+                          <span className="font-bold text-stone-700">Just Now</span>
+                      </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
