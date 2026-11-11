@@ -18,6 +18,7 @@ let actionHistory = [];
 let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
+let isFamilyMode = false; 
 let currentSecurityCode = "8429";
 let isMusicPlaying = false;
 
@@ -34,6 +35,7 @@ app.get('/api/history', (req, res) => {
 app.post('/api/reset', (req, res) => {
     isOwnerVerified = false;
     isGuestMode = false;
+    isFamilyMode = false;
     isAwaitingPassphrase = false;
     currentSecurityCode = "8429";
     isMusicPlaying = false;
@@ -48,6 +50,7 @@ app.post('/api/chat', async (req, res) => {
         isOwnerVerified = true;
         isGuestMode = false;
         isAwaitingPassphrase = false;
+        isFamilyMode = false;
         return res.status(200).json({ 
             reply: "Passphrase verified. Welcome back, Owner. You now have full access.", 
             uiUpdate: { guestMode: false } 
@@ -67,9 +70,27 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    if (msgLower.includes("unlock") && !isOwnerVerified) {
+    if (msgLower.includes("add family") || msgLower.includes("add member")) {
+        isFamilyMode = true;
+        isOwnerVerified = false; 
+        actionHistory.push({ action: "Family Member Added", status: "SUCCESS", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ 
+            reply: "Family member added successfully. They have restricted access.", 
+            uiUpdate: { guestMode: true } 
+        });
+    }
+
+    if (isFamilyMode && msgLower.includes("unlock")) {
+        actionHistory.push({ action: "Family Unlock Attempt", status: "DENIED", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ 
+            reply: "Access Denied. Only the primary owner can perform this action.", 
+            uiUpdate: {} 
+        });
+    }
+
+    if (msgLower.includes("unlock") && !isOwnerVerified && !isFamilyMode) {
         isGuestMode = true;
-        actionHistory.push({ action: "Unlock Door Attempt", status: "LOCKDOWN", time: new Date().toLocaleTimeString() });
+        actionHistory.push({ action: "Unauthorized Unlock Attempt", status: "LOCKDOWN", time: new Date().toLocaleTimeString() });
         return res.status(200).json({ 
             reply: "CRITICAL ALERT: Unauthorized access attempt detected. Initiating system lockdown protocol.", 
             uiUpdate: { triggerLockdown: true, guestMode: true } 

@@ -268,7 +268,7 @@ function App() {
                       <p className="font-bold text-stone-800">{item.action}</p>
                       <p className="text-xs text-stone-400">{item.time}</p>
                     </div>
-                    <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('VETO') || item.status.includes('LOCKDOWN') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                    <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('VETO') || item.status.includes('LOCKDOWN') || item.status.includes('DENIED') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                       {item.status}
                     </span>
                   </div>
@@ -339,7 +339,7 @@ function App() {
                 <button type="button" onClick={startListening} className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'I am the owner', 'Play lofi', or 'Help'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'Add family member', 'Play lofi', or 'Help'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
                 <button type="submit" className={`px-8 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
