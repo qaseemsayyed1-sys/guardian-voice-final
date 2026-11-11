@@ -153,18 +153,6 @@ function App() {
         }
       }
 
-      if (data.uiUpdate?.volumeUp) {
-        if (audioRef.current && audioRef.current.volume < 1.0) {
-          audioRef.current.volume = Math.min(1.0, audioRef.current.volume + 0.2);
-        }
-      }
-
-      if (data.uiUpdate?.volumeDown) {
-        if (audioRef.current && audioRef.current.volume > 0.0) {
-          audioRef.current.volume = Math.max(0.0, audioRef.current.volume - 0.2);
-        }
-      }
-
       if (data.uiUpdate?.showEmergency) setShowEmergency(true);
 
     } catch (error) {
@@ -294,7 +282,7 @@ function App() {
         </div>
       )}
 
-      <div className={`w-full max-w-6xl rounded-3xl shadow-xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200 shadow-stone-200/60'}`}>
+      <div className={`w-full max-w-6xl rounded-3xl shadow-2xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200'}`}>
         
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
           
@@ -341,31 +329,38 @@ function App() {
             </div>
           )}
           
-          <div className={`flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-            {isSpeaking && (
-                <div className="flex justify-start ml-2 mb-2">
-                    <div className="bg-stone-900 px-4 py-3 rounded-2xl flex gap-1 items-end h-10 shadow-md">
-                        <div className="w-1 bg-emerald-400 animate-[bounce_1s_infinite] h-4"></div>
-                        <div className="w-1 bg-emerald-400 animate-[bounce_1.2s_infinite] h-6"></div>
-                        <div className="w-1 bg-emerald-400 animate-[bounce_0.8s_infinite] h-3"></div>
-                        <div className="w-1 bg-emerald-400 animate-[bounce_1.1s_infinite] h-5"></div>
+          <div className={`relative flex-1 overflow-y-auto p-6 space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
+            
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
+                <svg className="w-96 h-96 text-stone-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </div>
+
+            <div className="relative z-10">
+                {messages.map((msg, index) => (
+                  <div key={index} className={`flex mb-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
+                      {msg.text}
                     </div>
-                </div>
-            )}
-            {isLoading && (
-                <div className="flex items-center gap-3 ml-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full w-max animate-pulse border border-emerald-200">
-                    <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
-                    <span className="text-xs font-bold tracking-widest uppercase">Guardian is thinking...</span>
-                </div>
-            )}
-            <div ref={messagesEndRef} />
+                  </div>
+                ))}
+                {isSpeaking && (
+                    <div className="flex justify-start ml-2 mb-2">
+                        <div className="bg-stone-900 px-4 py-3 rounded-2xl flex gap-1 items-end h-10 shadow-md">
+                            <div className="w-1 bg-emerald-400 animate-[bounce_1s_infinite] h-4"></div>
+                            <div className="w-1 bg-emerald-400 animate-[bounce_1.2s_infinite] h-6"></div>
+                            <div className="w-1 bg-emerald-400 animate-[bounce_0.8s_infinite] h-3"></div>
+                            <div className="w-1 bg-emerald-400 animate-[bounce_1.1s_infinite] h-5"></div>
+                        </div>
+                    </div>
+                )}
+                {isLoading && (
+                    <div className="flex items-center gap-3 ml-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full w-max animate-pulse border border-emerald-200">
+                        <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+                        <span className="text-xs font-bold tracking-widest uppercase">Guardian is thinking...</span>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
           </div>
 
           <div className={`px-6 pt-4 flex gap-2 overflow-x-auto pb-2 ${showEmergency ? 'bg-red-900' : 'bg-[#FDFCF8]'}`}>
@@ -403,7 +398,6 @@ function App() {
               {messages.map((msg, i) => {
                   if (msg.text.includes("Playing")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Music playback started.</p>;
                   if (msg.text.includes("stopped")) return <p key={i} className="text-stone-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-stone-400 block"></span>[LOW-RISK] Music stopped.</p>;
-                  if (msg.text.includes("volume")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Volume adjusted.</p>;
                   if (msg.text.includes("weather")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Weather fetched.</p>;
                   if (msg.text.includes("Passphrase verified")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[SECURITY] Owner authenticated.</p>;
                   if (msg.text.includes("Voice verification required")) return <p key={i} className="text-blue-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Awaiting passphrase.</p>;
@@ -412,7 +406,6 @@ function App() {
                   if (msg.text.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
                   if (msg.text.includes("vetoed")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
                   if (msg.text.includes("approved")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
-                  if (msg.text.includes("verified")) return <p key={i} className="text-blue-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Identity verified.</p>;
                   if (msg.text.includes("lockdown")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] System Lockdown Initiated!</p>;
                   if (msg.text.includes("SILENT SOS")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-ping"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] Silent SOS transmitted!</p>;
                   return null;
@@ -462,12 +455,25 @@ function App() {
               )}
 
               {!showEmergency && !showCodeBox && !showVetoPanel && (
-              <div className="text-center text-stone-400">
-                  <div className="w-24 h-24 mx-auto mb-6 bg-[#FDFCF8] rounded-full flex items-center justify-center shadow-sm border border-stone-200">
-                      <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <div className="w-full max-w-md space-y-4">
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 flex flex-col items-center text-center">
+                      <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-4">
+                          <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                      </div>
+                      <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
+                      <p className="text-sm text-stone-400">No pending risks detected.</p>
                   </div>
-                  <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
-                  <p className="text-sm">No pending risks detected.</p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
+                          <p className="text-[10px] text-stone-400 font-bold uppercase mb-1">Active Roles</p>
+                          <p className="text-sm font-bold text-stone-800">{isGuest ? 'Owner + 1 Guest' : 'Owner Only'}</p>
+                      </div>
+                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
+                          <p className="text-[10px] text-stone-400 font-bold uppercase mb-1">System Uptime</p>
+                          <p className="text-sm font-bold text-emerald-600">99.9%</p>
+                      </div>
+                  </div>
               </div>
               )}
           </div>
