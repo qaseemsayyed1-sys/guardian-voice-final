@@ -159,10 +159,6 @@ app.post('/api/chat', async (req, res) => {
         return res.status(200).json({ reply: "Nothing is currently playing.", uiUpdate: {} });
     }
 
-    if (msgLower.includes("weather")) {
-        return res.status(200).json({ reply: "It is currently 24 degrees and sunny outside.", uiUpdate: {} });
-    }
-
     if (msgLower.includes("help") || msgLower.includes("emergency") || msgLower.includes("sos")) {
         return res.status(200).json({ reply: "Emergency mode activated.", uiUpdate: { showEmergency: true } });
     }
@@ -172,7 +168,11 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const requestBody = {
-        systemInstruction: { parts: [{ text: "You are Guardian Voice, a helpful and calm AI assistant. Keep answers short and helpful." }] },
+        systemInstruction: { 
+            parts: [{ 
+                text: "You are Guardian Voice, a smart and helpful AI assistant. You can answer general knowledge, give outfit suggestions based on weather, and help with daily tasks. If the user asks to make a payment, politely tell them you cannot process real bank payments but you can guide them. Keep answers concise." 
+            }] 
+        },
         contents: [{ role: "user", parts: [{ text: message }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
     };
