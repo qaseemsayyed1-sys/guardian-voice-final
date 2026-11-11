@@ -259,11 +259,12 @@ function App() {
       <audio ref={audioRef} />
 
       {isLockdown && (
-        <div className="fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex flex-col items-center justify-center animate-pulse">
-            <svg className="w-32 h-32 text-red-500 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            <h1 className="text-red-500 font-mono font-bold text-5xl tracking-widest mb-4">LOCKDOWN</h1>
-            <p className="text-red-200 font-mono text-lg">SECURITY BREACH DETECTED</p>
-            <p className="text-red-400 font-mono text-sm mt-4 animate-ping">Isolating system...</p>
+        <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/60 via-transparent to-transparent"></div>
+            <svg className="w-32 h-32 text-red-500 mb-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <h1 className="text-red-500 font-mono font-bold text-5xl tracking-widest mb-4 relative z-10">LOCKDOWN</h1>
+            <p className="text-red-200 font-mono text-lg relative z-10">SECURITY BREACH DETECTED</p>
+            <p className="text-red-400 font-mono text-sm mt-4 animate-ping relative z-10">Isolating system...</p>
         </div>
       )}
 
@@ -340,7 +341,7 @@ function App() {
             </div>
           )}
           
-          <div className={`flex-1 overflow-y-auto p-6 space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
+          <div className={`flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
@@ -358,7 +359,12 @@ function App() {
                     </div>
                 </div>
             )}
-            {isLoading && <div className={`text-sm animate-pulse italic ${showEmergency ? 'text-red-300' : 'text-stone-400'}`}>Guardian is thinking...</div>}
+            {isLoading && (
+                <div className="flex items-center gap-3 ml-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full w-max animate-pulse border border-emerald-200">
+                    <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+                    <span className="text-xs font-bold tracking-widest uppercase">Guardian is thinking...</span>
+                </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -437,7 +443,7 @@ function App() {
               )}
 
               {!showEmergency && showVetoPanel && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
+              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-in fade-in zoom-in duration-300">
                   <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-200">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                   </div>
