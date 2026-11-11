@@ -10,8 +10,8 @@ const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const GEMINI_MODELS = [
-    "gemini-3.5-flash",
-    "gemini-3.1-flash-lite"
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite"
 ];
 
 let actionHistory = [];
@@ -19,6 +19,7 @@ let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
 let isFamilyMode = false; 
+let isAddingFamily = false;
 let currentSecurityCode = "8429";
 let isMusicPlaying = false;
 
@@ -36,6 +37,7 @@ app.post('/api/reset', (req, res) => {
     isOwnerVerified = false;
     isGuestMode = false;
     isFamilyMode = false;
+    isAddingFamily = false;
     isAwaitingPassphrase = false;
     currentSecurityCode = "8429";
     isMusicPlaying = false;
@@ -51,6 +53,7 @@ app.post('/api/chat', async (req, res) => {
         isGuestMode = false;
         isAwaitingPassphrase = false;
         isFamilyMode = false;
+        isAddingFamily = false;
         return res.status(200).json({ 
             reply: "Passphrase verified. Welcome back, Owner. You now have full access.", 
             uiUpdate: { guestMode: false } 
@@ -62,6 +65,18 @@ app.post('/api/chat', async (req, res) => {
         return res.status(200).json({ reply: "Incorrect passphrase. Access denied.", uiUpdate: {} });
     }
 
+    if (isAddingFamily) {
+        isAddingFamily = false;
+        isFamilyMode = true;
+        isOwnerVerified = false; 
+        const memberName = message.trim(); 
+        actionHistory.push({ action: `Family Member Added: ${memberName}`, status: "SUCCESS", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ 
+            reply: `${memberName} has been added successfully. They now have restricted access.`, 
+            uiUpdate: { guestMode: true } 
+        });
+    }
+
     if (msgLower.includes("owner") || msgLower.includes("admin") || msgLower.includes("my house")) {
         isAwaitingPassphrase = true;
         return res.status(200).json({ 
@@ -71,12 +86,10 @@ app.post('/api/chat', async (req, res) => {
     }
 
     if (msgLower.includes("add family") || msgLower.includes("add member")) {
-        isFamilyMode = true;
-        isOwnerVerified = false; 
-        actionHistory.push({ action: "Family Member Added", status: "SUCCESS", time: new Date().toLocaleTimeString() });
+        isAddingFamily = true;
         return res.status(200).json({ 
-            reply: "Family member added successfully. They have restricted access.", 
-            uiUpdate: { guestMode: true } 
+            reply: "Please tell me the name of the family member you want to add.", 
+            uiUpdate: {} 
         });
     }
 
