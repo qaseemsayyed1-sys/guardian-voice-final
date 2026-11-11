@@ -330,8 +330,23 @@ function App() {
                 </div>
               </div>
             ))}
-            {isLoading && <div className={`text-sm animate-pulse italic ${showEmergency ? 'text-red-300' : 'text-stone-400'}`}>Guardian is processing...</div>}
+            {isLoading && <div className={`text-sm animate-pulse italic ${showEmergency ? 'text-red-300' : 'text-stone-400'}`}>Guardian is thinking...</div>}
             <div ref={messagesEndRef} />
+          </div>
+
+          <div className={`px-6 pt-4 flex gap-2 overflow-x-auto pb-2 ${showEmergency ? 'bg-red-900' : 'bg-[#FDFCF8]'}`}>
+              <button onClick={() => handleSend(null, "unlock the door")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+                  🔒 Unlock Door
+              </button>
+              <button onClick={() => handleSend(null, "play music")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+                  🎵 Play Music
+              </button>
+              <button onClick={() => handleSend(null, "add family member")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+                  👨‍👩‍👧 Add Family
+              </button>
+              <button onClick={fetchHistory} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+                  📜 View Logs
+              </button>
           </div>
 
           <div className={`p-6 border-t ${showEmergency ? 'bg-red-900 border-red-800' : 'bg-[#FDFCF8] border-stone-200'}`}>
