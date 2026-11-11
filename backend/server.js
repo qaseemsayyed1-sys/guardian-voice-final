@@ -14,6 +14,7 @@ const GEMINI_MODELS = [
     "gemini-3.1-flash-lite"
 ];
 
+let actionHistory = [];
 let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
@@ -26,12 +27,8 @@ app.get('/', (req, res) => {
     res.status(200).send('Guardian Voice backend is running');
 });
 
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
-        service: 'Guardian Voice',
-        aiConfigured: Boolean(GEMINI_API_KEY)
-    });
+app.get('/api/history', (req, res) => {
+    res.status(200).json(actionHistory);
 });
 
 app.post('/api/reset', (req, res) => {
@@ -40,10 +37,7 @@ app.post('/api/reset', (req, res) => {
     isAwaitingPassphrase = false;
     currentSecurityCode = "8429";
     isMusicPlaying = false;
-    res.status(200).json({
-        success: true,
-        message: "Chat reset successfully"
-    });
+    res.status(200).json({ success: true, message: "Chat reset successfully" });
 });
 
 app.post('/api/chat', async (req, res) => {
@@ -62,10 +56,7 @@ app.post('/api/chat', async (req, res) => {
 
     if (isAwaitingPassphrase) {
         isAwaitingPassphrase = false;
-        return res.status(200).json({ 
-            reply: "Incorrect passphrase. Access denied.", 
-            uiUpdate: {} 
-        });
+        return res.status(200).json({ reply: "Incorrect passphrase. Access denied.", uiUpdate: {} });
     }
 
     if (msgLower.includes("owner") || msgLower.includes("admin") || msgLower.includes("my house")) {
@@ -78,6 +69,7 @@ app.post('/api/chat', async (req, res) => {
 
     if (msgLower.includes("unlock") && !isOwnerVerified) {
         isGuestMode = true;
+        actionHistory.push({ action: "Unlock Door Attempt", status: "LOCKDOWN", time: new Date().toLocaleTimeString() });
         return res.status(200).json({ 
             reply: "CRITICAL ALERT: Unauthorized access attempt detected. Initiating system lockdown protocol.", 
             uiUpdate: { triggerLockdown: true, guestMode: true } 
@@ -99,10 +91,18 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    if (msgLower === "veto") return res.status(200).json({ reply: "Action vetoed by owner.", uiUpdate: { clearPending: true } });
-    if (msgLower === "accept") return res.status(200).json({ reply: "Action approved.", uiUpdate: { clearPending: true } });
+    if (msgLower === "veto") {
+        actionHistory.push({ action: "Door Unlock", status: "VETOED", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ reply: "Action vetoed by owner.", uiUpdate: { clearPending: true } });
+    }
+    
+    if (msgLower === "accept") {
+        actionHistory.push({ action: "Door Unlock", status: "APPROVED", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ reply: "Action approved.", uiUpdate: { clearPending: true } });
+    }
     
     if (msgLower === "9999") {
+        actionHistory.push({ action: "Silent SOS", status: "TRIGGERED", time: new Date().toLocaleTimeString() });
         return res.status(200).json({ 
             reply: "Code verified. Executing unlock sequence. (Note: Silent SOS alert sent to authorities).", 
             uiUpdate: { showPending: true, silentSOS: true } 
@@ -134,16 +134,11 @@ app.post('/api/chat', async (req, res) => {
     }
 
     if (!GEMINI_API_KEY) {
-        return res.status(200).json({
-            reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline - API Key missing).",
-            uiUpdate: {}
-        });
+        return res.status(200).json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI module offline).", uiUpdate: {} });
     }
 
     const requestBody = {
-        systemInstruction: {
-            parts: [{ text: "You are Guardian Voice, a helpful and calm AI assistant. Keep answers short and helpful." }]
-        },
+        systemInstruction: { parts: [{ text: "You are Guardian Voice, a helpful and calm AI assistant. Keep answers short and helpful." }] },
         contents: [{ role: "user", parts: [{ text: message }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
     };
@@ -158,13 +153,7 @@ app.post('/api/chat', async (req, res) => {
                 response = await axios.post(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
                     requestBody,
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                            "x-goog-api-key": GEMINI_API_KEY
-                        },
-                        timeout: 25000
-                    }
+                    { headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY }, timeout: 25000 }
                 );
 
                 const reply = response.data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim();
@@ -172,7 +161,6 @@ app.post('/api/chat', async (req, res) => {
                     lastError = new Error("The AI returned an empty response.");
                     continue;
                 }
-
                 return res.status(200).json({ reply, uiUpdate: {} });
 
             } catch (error) {
@@ -185,11 +173,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.error("All Gemini models failed:", lastError?.response?.data || lastError?.message);
-    
-    return res.status(200).json({ 
-        reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI is temporarily busy).", 
-        uiUpdate: {} 
-    });
+    return res.status(200).json({ reply: "I am Guardian Voice. I can handle security, play music, check weather, or answer your general questions. (AI is temporarily busy).", uiUpdate: {} });
 });
 
 app.listen(PORT, () => {

@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const BACKEND_URL = 'https://guardian-voice-final.onrender.com/api/chat';
 const RESET_URL = 'https://guardian-voice-final.onrender.com/api/reset';
+const HISTORY_URL = 'https://guardian-voice-final.onrender.com/api/history';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -19,6 +20,9 @@ function App() {
   const [currentPlaylist, setCurrentPlaylist] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isLockdown, setIsLockdown] = useState(false);
+  
+  const [historyData, setHistoryData] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -184,6 +188,16 @@ function App() {
     setIsLoading(false);
   };
 
+  const fetchHistory = async () => {
+    try {
+      const res = await axios.get(HISTORY_URL);
+      setHistoryData(res.data);
+      setShowHistory(true);
+    } catch (error) {
+      console.log("Error fetching history", error);
+    }
+  };
+
   const runAutoDemo = async () => {
     if (isAutoPlaying) return;
     setIsAutoPlaying(true);
@@ -239,6 +253,32 @@ function App() {
         </div>
       )}
 
+      {showHistory && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
+          <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-stone-900">Activity Logs</h2>
+              <button onClick={() => setShowHistory(false)} className="text-red-500 font-bold text-xl">✕</button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {historyData.length === 0 ? <p className="text-stone-500 text-sm">No actions recorded yet.</p> : 
+                historyData.map((item, index) => (
+                  <div key={index} className="bg-white p-3 rounded-lg border border-stone-200 flex justify-between items-center text-sm shadow-sm">
+                    <div>
+                      <p className="font-bold text-stone-800">{item.action}</p>
+                      <p className="text-xs text-stone-400">{item.time}</p>
+                    </div>
+                    <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('VETO') || item.status.includes('LOCKDOWN') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`w-full max-w-6xl rounded-3xl shadow-xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200 shadow-stone-200/60'}`}>
         
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
@@ -259,6 +299,9 @@ function App() {
                           Guest Mode
                       </span>
                   )}
+                  <button onClick={fetchHistory} className={`text-xs px-3 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${showEmergency ? 'bg-red-800 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
+                      📜 Logs
+                  </button>
                   <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
                       {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
                   </button>
@@ -339,4 +382,50 @@ function App() {
 
               {!showEmergency && showCodeBox && (
               <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb
+                  <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-200">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  </div>
+                  <h2 className="text-stone-900 font-bold text-2xl mb-2 tracking-tight">Verification Required</h2>
+                  <p className="text-stone-500 mb-8 text-sm">Please read this code aloud to proceed.</p>
+                  <div className="bg-[#F4F1EA] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-stone-900 font-bold border border-stone-300 shadow-inner">
+                  {generatedCode}
+                  </div>
+              </div>
+              )}
+
+              {!showEmergency && showVetoPanel && (
+              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
+                  <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-200">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  </div>
+                  <h2 className="text-stone-900 font-bold text-2xl mb-1 tracking-tight">Pending Approval</h2>
+                  <p className="text-stone-500 text-sm mb-8">A high-risk action requires your attention.</p>
+                  
+                  <div className="flex gap-4 justify-center">
+                  <button onClick={handleAccept} className="bg-stone-200 hover:bg-stone-300 text-stone-700 px-6 py-4 rounded-xl font-bold w-full transition-all text-sm tracking-wide">
+                      ACCEPT
+                  </button>
+                  <button onClick={handleVeto} className="bg-red-800 hover:bg-red-900 text-white px-6 py-4 rounded-xl font-bold w-full shadow-lg shadow-red-800/20 transition-all transform hover:scale-[1.02] text-sm tracking-wide">
+                      VETO
+                  </button>
+                  </div>
+              </div>
+              )}
+
+              {!showEmergency && !showCodeBox && !showVetoPanel && (
+              <div className="text-center text-stone-400">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-[#FDFCF8] rounded-full flex items-center justify-center shadow-sm border border-stone-200">
+                      <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  </div>
+                  <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
+                  <p className="text-sm">No pending risks detected.</p>
+              </div>
+              )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
