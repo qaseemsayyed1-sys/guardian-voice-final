@@ -20,6 +20,8 @@ function App() {
   const [currentPlaylist, setCurrentPlaylist] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isLockdown, setIsLockdown] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [aiStatus, setAiStatus] = useState("Gemini Active");
   
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -31,7 +33,7 @@ function App() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isLoading, showCodeBox, showVetoPanel, showEmergency, isLockdown]);
+  }, [messages, isLoading, showCodeBox, showVetoPanel, showEmergency, isLockdown, isSpeaking]);
 
   useEffect(() => {
     if ('speechSynthesis' in window) {
@@ -56,6 +58,10 @@ function App() {
       if (alexaVoice) utterance.voice = alexaVoice;
       utterance.rate = 1.0; 
       utterance.pitch = 1.1; 
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -95,6 +101,7 @@ function App() {
     setInput('');
     setIsLoading(true);
     setShowEmergency(false);
+    setAiStatus("Processing...");
 
     try {
       const response = await axios.post(BACKEND_URL, { message: userMessage });
@@ -102,6 +109,12 @@ function App() {
       
       setMessages((prev) => [...prev, { sender: 'ai', text: data.reply }]);
       speak(data.reply);
+
+      if (data.reply.includes("temporarily busy") || data.reply.includes("offline mode")) {
+          setAiStatus("Fallback Mode");
+      } else {
+          setAiStatus("Gemini Active");
+      }
 
       if (data.uiUpdate?.silentSOS) {
         setMessages((prev) => [...prev, { sender: 'ai', text: '[SILENT SOS SENT TO AUTHORITIES]' }]);
@@ -156,6 +169,7 @@ function App() {
 
     } catch (error) {
       setMessages((prev) => [...prev, { sender: 'ai', text: 'Connection error. Wake up backend.' }]);
+      setAiStatus("Offline");
     }
     setIsLoading(false);
   };
@@ -293,7 +307,11 @@ function App() {
                       <p className={`text-xs font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>Alexa+ Simulator</p>
                   </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase mr-2">
+                      <span className={`px-2 py-1 rounded border ${aiStatus === 'Fallback Mode' ? 'bg-amber-50 text-amber-600 border-amber-200' : aiStatus === 'Offline' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>AI: {aiStatus}</span>
+                      <span className="text-stone-600 bg-stone-100 px-2 py-1 rounded border border-stone-200 hidden sm:block">Threat: LOW</span>
+                  </div>
                   {isGuest && (
                       <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide border border-amber-300">
                           Guest Mode
@@ -330,6 +348,16 @@ function App() {
                 </div>
               </div>
             ))}
+            {isSpeaking && (
+                <div className="flex justify-start ml-2 mb-2">
+                    <div className="bg-stone-900 px-4 py-3 rounded-2xl flex gap-1 items-end h-10 shadow-md">
+                        <div className="w-1 bg-emerald-400 animate-[bounce_1s_infinite] h-4"></div>
+                        <div className="w-1 bg-emerald-400 animate-[bounce_1.2s_infinite] h-6"></div>
+                        <div className="w-1 bg-emerald-400 animate-[bounce_0.8s_infinite] h-3"></div>
+                        <div className="w-1 bg-emerald-400 animate-[bounce_1.1s_infinite] h-5"></div>
+                    </div>
+                </div>
+            )}
             {isLoading && <div className={`text-sm animate-pulse italic ${showEmergency ? 'text-red-300' : 'text-stone-400'}`}>Guardian is thinking...</div>}
             <div ref={messagesEndRef} />
           </div>

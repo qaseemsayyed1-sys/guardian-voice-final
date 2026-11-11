@@ -29,6 +29,19 @@ app.get('/', (req, res) => {
     res.status(200).send('Guardian Voice backend is running');
 });
 
+app.get('/api/mcp/tools', (req, res) => {
+    res.status(200).json({
+        protocol: "MCP",
+        version: "2025-11-25",
+        tools: [
+            { name: "unlock_door", description: "Unlocks the smart door", risk: "HIGH" },
+            { name: "play_music", description: "Plays music on speaker", risk: "LOW" },
+            { name: "add_family_member", description: "Adds a restricted user", risk: "MEDIUM" },
+            { name: "silent_sos", description: "Triggers silent emergency alert", risk: "CRITICAL" }
+        ]
+    });
+});
+
 app.get('/api/history', (req, res) => {
     res.status(200).json(actionHistory);
 });
