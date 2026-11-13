@@ -14,6 +14,7 @@ const GEMINI_MODELS = [
 ];
 
 let actionHistory = [];
+let feedbackData = [];
 let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
@@ -43,6 +44,15 @@ app.get('/api/mcp/tools', (req, res) => {
 
 app.get('/api/history', (req, res) => {
     res.status(200).json(actionHistory);
+});
+
+app.post('/api/feedback', (req, res) => {
+    const { text } = req.body;
+    if (text) {
+        feedbackData.push({ text, time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ success: true, message: "Feedback received. Thank you!" });
+    }
+    return res.status(400).json({ error: "Feedback text is required." });
 });
 
 app.post('/api/reset', (req, res) => {

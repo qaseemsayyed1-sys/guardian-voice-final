@@ -22,6 +22,8 @@ function App() {
   const [isLockdown, setIsLockdown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiStatus, setAiStatus] = useState("Gemini Active");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
   
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -200,6 +202,18 @@ function App() {
     }
   };
 
+  const submitFeedback = async () => {
+    if(!feedbackText.trim()) return;
+    try {
+        await axios.post('https://guardian-voice-final.onrender.com/api/feedback', { text: feedbackText });
+        alert("Thank you! Your feedback has been recorded.");
+        setFeedbackText("");
+        setShowFeedback(false);
+    } catch (error) {
+        console.error("Feedback error", error);
+    }
+  };
+
   const runAutoDemo = async () => {
     if (isAutoPlaying) return;
     setIsAutoPlaying(true);
@@ -282,6 +296,25 @@ function App() {
         </div>
       )}
 
+      {showFeedback && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-bold text-stone-900 mb-2">MVP Feedback Loop</h2>
+            <p className="text-sm text-stone-500 mb-4">Help us improve Guardian Voice. Report a bug or suggest a feature.</p>
+            <textarea 
+                value={feedbackText} 
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Type your feedback here..."
+                className="w-full border border-stone-300 rounded-xl p-3 mb-4 text-sm focus:outline-none focus:border-stone-900 h-24 resize-none"
+            />
+            <div className="flex gap-3 justify-end">
+                <button onClick={() => setShowFeedback(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100">Cancel</button>
+                <button onClick={submitFeedback} className="px-6 py-2 rounded-lg font-bold text-white bg-stone-900 hover:bg-stone-800">Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`w-full max-w-6xl rounded-3xl shadow-2xl border flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200'}`}>
         
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
@@ -308,6 +341,9 @@ function App() {
                   )}
                   <button onClick={fetchHistory} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${showEmergency ? 'bg-red-800 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
                       📜 Logs
+                  </button>
+                  <button onClick={() => setShowFeedback(true)} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300`}>
+                      💡 Feedback
                   </button>
                   <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-[10px] md:text-xs px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
                       {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
