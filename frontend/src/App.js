@@ -22,6 +22,7 @@ function App() {
   const [isLockdown, setIsLockdown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiStatus, setAiStatus] = useState("Gemini Active");
+  const [threatLevel, setThreatLevel] = useState("LOW");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   
@@ -123,9 +124,17 @@ function App() {
       }
       if (data.uiUpdate?.guestMode !== undefined) setIsGuest(data.uiUpdate.guestMode);
       if (data.uiUpdate?.triggerLockdown) {
+        setThreatLevel("HIGH");
         setIsLockdown(true);
         setTimeout(() => setIsLockdown(false), 5000); 
+        setTimeout(() => setThreatLevel("LOW"), 6000);
       }
+      
+      if (data.reply.includes("Access Denied") || data.reply.includes("Incorrect passphrase") || data.reply.includes("Unauthorized")) {
+        setThreatLevel("HIGH");
+        setTimeout(() => setThreatLevel("LOW"), 5000); 
+      }
+
       if (data.uiUpdate?.showCode) {
         setShowCodeBox(true);
         setGeneratedCode(data.uiUpdate.code);
@@ -332,7 +341,9 @@ function App() {
               <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
                   <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase">
                       <span className={`px-2 py-1 rounded border ${aiStatus === 'Fallback Mode' ? 'bg-amber-50 text-amber-600 border-amber-200' : aiStatus === 'Offline' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>AI: {aiStatus}</span>
-                      <span className="text-stone-600 bg-stone-100 px-2 py-1 rounded border border-stone-200">Threat: LOW</span>
+                      <span className={`px-2 py-1 rounded border font-bold ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-green-50 text-green-600 border-green-200'}`}>
+                          Threat: {threatLevel}
+                      </span>
                   </div>
                   {isGuest && (
                       <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wide border border-amber-300">
