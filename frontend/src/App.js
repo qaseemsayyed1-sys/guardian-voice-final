@@ -32,6 +32,7 @@ function App() {
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -96,40 +97,75 @@ function App() {
     recognition.start();
   };
 
-  const handleImageUpload = (e) => {
+  // Compress uploaded images before sending them to the Gemini vision API.
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const img = new Image();
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIMENSION = 1280;
+
+          // Keep the original dimensions for small images; never enlarge them.
+          const scale = Math.min(
+            1,
+            MAX_DIMENSION / Math.max(img.width, img.height)
+          );
+
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not create image canvas.'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // JPEG quality 0.75 usually gives a much smaller upload.
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+
+        img.onerror = () => reject(new Error('Could not load the selected image.'));
+        img.src = event.target.result;
+      };
+
+      reader.onerror = () => reject(new Error('Could not read the selected image.'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
 
-        setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded]' }]);
-        setIsLoading(true);
-        
-        try {
-          const res = await axios.post(VISION_URL, { imageBase64: compressedBase64 });
-          setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
-          speak(res.data.reply);
-        } catch (error) {
-          setMessages(prev => [...prev, { sender: 'ai', text: 'The AI Vision is currently busy. Please try again.' }]);
-        }
-        setIsLoading(false);
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+    setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded]' }]);
+    setIsLoading(true);
+
+    try {
+      const compressedBase64 = await compressImage(file);
+
+      const res = await axios.post(VISION_URL, {
+        imageBase64: compressedBase64
+      });
+
+      setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
+      speak(res.data.reply);
+    } catch (error) {
+      console.error("Image upload/analysis error:", error);
+      setMessages(prev => [...prev, {
+        sender: 'ai',
+        text: 'The AI Vision is currently busy. Please try again.'
+      }]);
+    } finally {
+      setIsLoading(false);
+      // Allow selecting the same image again.
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSend = async (e, voiceText = null) => {
@@ -287,6 +323,7 @@ function App() {
       
       <audio ref={audioRef} />
       <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
+      <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} className="hidden" onChange={handleImageUpload} />
 
       {isLockdown && (
         <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse overflow-hidden">
@@ -436,8 +473,11 @@ function App() {
 
           <div className={`p-6 border-t ${showEmergency ? 'bg-red-900 border-red-800' : 'bg-[#FDFCF8] border-stone-200'}`}>
               <form onSubmit={handleSend} className="flex gap-3">
-                <button type="button" onClick={() => fileInputRef.current.click()} className={`p-4 rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
-                  📷
+                <button type="button" onClick={() => cameraInputRef.current?.click()} aria-label="Take a photo" title="Take a photo" className={`p-4 rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
+                  📸
+                </button>
+                <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Choose from gallery" title="Choose from gallery" className={`p-4 rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
+                  🖼️
                 </button>
                 <button type="button" onClick={startListening} className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
