@@ -552,7 +552,7 @@ function App() {
             <div className="relative z-10">
               {messages.map((msg, index) => (
                 <div key={index} className={`flex mb-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl ${isEasyMode ? 'text-lg' : 'text-sm'} leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
                     {msg.image && (
                       <img
                         src={msg.image}
