@@ -51,18 +51,15 @@ const saveHistory = async (action, status, role) => {
     const newEntry = { action, status, role, time: new Date().toLocaleString() };
     if (historyRef) {
         try {
-            console.log("Attempting to save history:", newEntry);
             await historyRef.add({
                 action, status, role,
                 time: FieldValue.serverTimestamp()
             });
-            console.log("History saved successfully!");
         } catch (e) { 
             console.error("Firebase Save Error:", e.message); 
         }
     } else {
         memoryHistory.push(newEntry);
-        console.log("Saved in memory (Firebase not connected).");
     }
 };
 
@@ -84,7 +81,6 @@ app.get('/api/history', async (req, res) => {
             });
             return res.status(200).json(history);
         } catch (error) {
-            console.error("History Fetch Error:", error.message);
             return res.status(500).json({ error: "Failed to fetch history from DB" });
         }
     } else {
@@ -123,8 +119,7 @@ app.post('/api/analyze-image', async (req, res) => {
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
         
     } catch (error) {
-        const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-        console.error("VISION API ERROR:", errorMsg);
+        console.error("VISION API ERROR:", error.response ? error.response.data : error.message);
         return res.status(500).json({ reply: "The AI Vision is temporarily busy. (API Limit Exceeded).", uiUpdate: {} });
     }
 });
