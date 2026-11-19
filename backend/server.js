@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const admin = require('firebase-admin');
-const { cert } = require('firebase-admin/app'); 
+const { cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
 const app = express();
 app.use(cors());
@@ -26,7 +27,7 @@ try {
             credential: cert(serviceAccount)
         });
         
-        db = admin.firestore();
+        db = getFirestore();
         historyRef = db.collection('history');
         console.log("Firebase initialized successfully.");
     } else {
