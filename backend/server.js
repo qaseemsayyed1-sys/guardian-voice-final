@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const admin = require('firebase-admin');
-const { cert } = require('firebase-admin/app');
+const { cert, getApps, initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 const app = express();
@@ -38,8 +38,8 @@ try {
             privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
         };
 
-        if (!admin.apps.length) {
-            admin.initializeApp({
+         if (!getApps().length) {
+         initializeApp({
                 credential: cert(serviceAccount)
             });
         }
