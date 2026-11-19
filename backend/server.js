@@ -1,13 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-
-let admin;
-try {
-    admin = require('firebase-admin');
-} catch (e) {
-    console.error("FIREBASE MODULE ERROR: firebase-admin is not installed. Run npm install firebase-admin");
-}
+const admin = require('firebase-admin');
+const { cert } = require('firebase-admin/app'); 
 
 const app = express();
 app.use(cors());
@@ -19,21 +14,8 @@ const ADMIN_PIN = "1234";
 
 let db, historyRef;
 
-console.log("--- FIREBASE DEBUG START ---");
-console.log("Project ID exists:", !!process.env.FIREBASE_PROJECT_ID);
-console.log("Client Email exists:", !!process.env.FIREBASE_CLIENT_EMAIL);
-console.log("Private Key exists:", !!process.env.FIREBASE_PRIVATE_KEY);
-if (process.env.FIREBASE_PRIVATE_KEY) {
-    console.log("Private Key starts with:", process.env.FIREBASE_PRIVATE_KEY.substring(0, 30));
-}
-console.log("Admin module loaded:", !!admin);
-if (admin) {
-    console.log("Admin credential exists:", !!admin.credential);
-}
-console.log("--- FIREBASE DEBUG END ---");
-
 try {
-    if (admin && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
         const serviceAccount = {
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -41,18 +23,17 @@ try {
         };
 
         admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
+            credential: cert(serviceAccount)
         });
         
         db = admin.firestore();
         historyRef = db.collection('history');
         console.log("Firebase initialized successfully.");
     } else {
-        console.log("Firebase keys missing or admin module not loaded. Running in memory mode.");
+        console.log("Firebase keys missing. Running in memory mode.");
     }
 } catch (error) {
     console.error("Firebase Init Error:", error.message);
-    console.error("Full Error Stack:", error.stack);
 }
 
 let isGuestMode = false;
