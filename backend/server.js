@@ -99,28 +99,40 @@ app.post('/api/analyze-image', async (req, res) => {
 
     try {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
-            { 
-                contents: [{ 
-                    parts: [
-                        { text: "You are Guardian Voice. Describe this image and help the user. Keep it very short." }, 
-                        { inline_data: { mime_type: "image/jpeg", data: base64Data } }
-                    ] 
-                }],
-                generationConfig: {
-                    maxOutputTokens: 100
-                }
+        const modelsToTry = ["gemini-3.8-flash", "gemini-1.5-flash"];
+        let reply = null;
+
+        for (const model of modelsToTry) {
+            try {
+                const response = await axios.post(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+                    { 
+                        contents: [{ 
+                            parts: [
+                                { text: "You are Guardian Voice. Describe this image and help the user. Keep it very short." }, 
+                                { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+                            ] 
+                        }],
+                        generationConfig: { maxOutputTokens: 100 }
+                    }
+                );
+                reply = response.data.candidates[0].content.parts[0].text;
+                break;
+            } catch (err) {
+                console.log(`${model} failed for image, trying next...`);
             }
-        );
-        
-        await saveHistory("Image Analyzed", "SUCCESS", "Owner");
-        return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
+        }
+
+        if (reply) {
+            await saveHistory("Image Analyzed", "SUCCESS", "Owner");
+            return res.status(200).json({ reply, uiUpdate: {} });
+        } else {
+            return res.status(500).json({ reply: "The AI Vision is temporarily busy. Please try again.", uiUpdate: {} });
+        }
         
     } catch (error) {
-        console.error("VISION API ERROR:", error.response ? JSON.stringify(error.response.data) : error.message);
-        return res.status(500).json({ reply: "The AI Vision is temporarily busy. Please try again in 1 minute.", uiUpdate: {} });
+        console.error("VISION API ERROR:", error.message);
+        return res.status(500).json({ reply: "The AI Vision is temporarily busy. Please try again.", uiUpdate: {} });
     }
 });
 
@@ -197,13 +209,30 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
-            { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
-        );
-        return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
+        const modelsToTry = ["gemini-3.8-flash", "gemini-1.5-flash"];
+        let reply = null;
+
+        for (const model of modelsToTry) {
+            try {
+                const response = await axios.post(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+                    { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
+                );
+                reply = response.data.candidates[0].content.parts[0].text;
+                break; 
+            } catch (err) {
+                console.log(`${model} failed, trying next...`);
+            }
+        }
+
+        if (reply) {
+            return res.status(200).json({ reply, uiUpdate: {} });
+        } else {
+            return res.status(200).json({ reply: "Google AI server is currently overloaded. Please try again in 30 seconds.", uiUpdate: {} });
+        }
+
     } catch (error) {
-        console.error("CHAT API ERROR:", error.response ? JSON.stringify(error.response.data) : error.message);
+        console.error("CHAT API ERROR:", error.message);
         return res.status(200).json({ reply: "Running in offline mode.", uiUpdate: {} });
     }
 });
