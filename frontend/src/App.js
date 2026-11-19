@@ -123,7 +123,7 @@ function App() {
         <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
           <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-stone-200">
             <h2 className="text-xl font-bold text-stone-900 mb-2">Owner Access Only</h2>
-            <p className="text-sm text-stone-500 mb-4">Enter your 4-digit PIN to view activity logs.</p>
+            <p className="text-sm text-stone-500 mb-4">Enter your 4-digit PIN to view logs.</p>
             <input type="password" value={ownerPin} onChange={(e) => setOwnerPin(e.target.value)} maxLength={4} className="w-full bg-[#F4F1EA] border border-stone-300 rounded-xl px-4 py-3 text-center text-2xl tracking-widest font-mono mb-4" />
             <div className="flex gap-2">
               <button onClick={() => setShowPinModal(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100 w-full">Cancel</button>

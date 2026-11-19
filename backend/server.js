@@ -10,18 +10,32 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODELS = ["gemini-3.5-flash"];
-const ADMIN_PIN = "1234"; // Owner ka secret PIN
+const ADMIN_PIN = "1234"; 
 
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  })
-});
+let db, historyRef;
 
-const db = admin.firestore();
-const historyRef = db.collection('history');
+try {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (projectId && clientEmail && privateKey) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: projectId,
+        clientEmail: clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n')
+      })
+    });
+    db = admin.firestore();
+    historyRef = db.collection('history');
+    console.log("Firebase initialized successfully.");
+  } else {
+    console.log("Firebase keys missing. Running in memory mode.");
+  }
+} catch (error) {
+  console.error("Firebase Init Error:", error.message);
+}
 
 let guestLinkToken = null;
 let isGuestMode = false;
@@ -31,17 +45,19 @@ let isFamilyMode = false;
 let isAddingFamily = false;
 let currentSecurityCode = "8429";
 let isMusicPlaying = false;
+let memoryHistory = [];
 
 const saveHistory = async (action, status, role) => {
-    try {
-        await historyRef.add({
-            action,
-            status,
-            role,
-            time: admin.firestore.FieldValue.serverTimestamp()
-        });
-    } catch (e) {
-        console.error("Firebase History Error:", e);
+    const newEntry = { action, status, role, time: new Date().toLocaleString() };
+    if (historyRef) {
+        try {
+            await historyRef.add({
+                action, status, role,
+                time: admin.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) { console.error("Firebase Save Error:", e.message); }
+    } else {
+        memoryHistory.push(newEntry);
     }
 };
 
@@ -49,33 +65,30 @@ app.get('/', (req, res) => res.status(200).send('Guardian Voice Backend running'
 
 app.post('/api/verify-owner', (req, res) => {
     const { pin } = req.body;
-    if (pin === ADMIN_PIN) {
-        res.status(200).json({ success: true });
-    } else {
-        res.status(401).json({ success: false, error: "Invalid Owner PIN" });
-    }
+    if (pin === ADMIN_PIN) res.status(200).json({ success: true });
+    else res.status(401).json({ success: false, error: "Invalid Owner PIN" });
 });
 
 app.get('/api/history', async (req, res) => {
     const { pin } = req.query;
-    if (pin !== ADMIN_PIN) {
-        return res.status(403).json({ error: "Unauthorized. Owner PIN required." });
-    }
+    if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Unauthorized. Owner PIN required." });
 
-    try {
-        const snapshot = await historyRef.orderBy('time', 'desc').limit(50).get();
-        const history = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                action: data.action,
-                status: data.status,
-                role: data.role,
-                time: data.time ? data.time.toDate().toLocaleString() : 'Just Now'
-            };
-        });
-        res.status(200).json(history);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch history" });
+    if (historyRef) {
+        try {
+            const snapshot = await historyRef.orderBy('time', 'desc').limit(50).get();
+            const history = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    action: data.action, status: data.status, role: data.role,
+                    time: data.time ? data.time.toDate().toLocaleString() : 'Just Now'
+                };
+            });
+            return res.status(200).json(history);
+        } catch (error) {
+            return res.status(500).json({ error: "Failed to fetch history from DB" });
+        }
+    } else {
+        return res.status(200).json(memoryHistory);
     }
 });
 
@@ -125,7 +138,7 @@ app.post('/api/chat', async (req, res) => {
 
     if (msgLower.includes("owner") || msgLower.includes("admin")) {
         isAwaitingPassphrase = true;
-        return res.status(200).json({ reply: "Voice verification required. Speak the passphrase.", uiUpdate: {} });
+        return res.status(200).json({ reply: "Voice verification required.", uiUpdate: {} });
     }
 
     if (msgLower.includes("add family")) {
