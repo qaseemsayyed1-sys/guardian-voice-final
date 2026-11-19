@@ -15,8 +15,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ADMIN_PIN = "1234"; 
 
 const GEMINI_MODELS = [
-    "gemini-3.5-flash",
-    "gemini-1.5-flash"
+    "gemini-3.8-flash",
+  "gemini-3.5-flash-lite"
 ];
 
 let db, historyRef;
