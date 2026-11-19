@@ -14,29 +14,27 @@ const ADMIN_PIN = "1234";
 let db, historyRef;
 
 try {
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        const serviceAccount = {
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        };
 
-  if (projectId && clientEmail && privateKey) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: projectId,
-        clientEmail: clientEmail,
-        privateKey: privateKey.replace(/\\n/g, '\n')
-      })
-    });
-    db = admin.firestore();
-    historyRef = db.collection('history');
-    console.log("Firebase initialized successfully.");
-  } else {
-    console.log("Firebase keys missing. Running in memory mode.");
-  }
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        
+        db = admin.firestore();
+        historyRef = db.collection('history');
+        console.log("Firebase initialized successfully.");
+    } else {
+        console.log("Firebase keys missing. Running in memory mode.");
+    }
 } catch (error) {
-  console.error("Firebase Init Error:", error.message);
+    console.error("Firebase Init Error:", error.message);
 }
 
-let guestLinkToken = null;
 let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
@@ -61,12 +59,6 @@ const saveHistory = async (action, status, role) => {
 };
 
 app.get('/', (req, res) => res.status(200).send('Guardian Voice Backend running'));
-
-app.post('/api/verify-owner', (req, res) => {
-    const { pin } = req.body;
-    if (pin === ADMIN_PIN) res.status(200).json({ success: true });
-    else res.status(401).json({ success: false, error: "Invalid Owner PIN" });
-});
 
 app.get('/api/history', async (req, res) => {
     const { pin } = req.query;
