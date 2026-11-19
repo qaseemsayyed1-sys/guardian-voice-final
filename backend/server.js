@@ -1,7 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const admin = require('firebase-admin');
+
+let admin;
+try {
+    admin = require('firebase-admin');
+} catch (e) {
+    console.error("FIREBASE MODULE ERROR: firebase-admin is not installed. Run npm install firebase-admin");
+}
 
 const app = express();
 app.use(cors());
@@ -13,8 +19,21 @@ const ADMIN_PIN = "1234";
 
 let db, historyRef;
 
+console.log("--- FIREBASE DEBUG START ---");
+console.log("Project ID exists:", !!process.env.FIREBASE_PROJECT_ID);
+console.log("Client Email exists:", !!process.env.FIREBASE_CLIENT_EMAIL);
+console.log("Private Key exists:", !!process.env.FIREBASE_PRIVATE_KEY);
+if (process.env.FIREBASE_PRIVATE_KEY) {
+    console.log("Private Key starts with:", process.env.FIREBASE_PRIVATE_KEY.substring(0, 30));
+}
+console.log("Admin module loaded:", !!admin);
+if (admin) {
+    console.log("Admin credential exists:", !!admin.credential);
+}
+console.log("--- FIREBASE DEBUG END ---");
+
 try {
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    if (admin && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
         const serviceAccount = {
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -29,10 +48,11 @@ try {
         historyRef = db.collection('history');
         console.log("Firebase initialized successfully.");
     } else {
-        console.log("Firebase keys missing. Running in memory mode.");
+        console.log("Firebase keys missing or admin module not loaded. Running in memory mode.");
     }
 } catch (error) {
     console.error("Firebase Init Error:", error.message);
+    console.error("Full Error Stack:", error.stack);
 }
 
 let isGuestMode = false;
@@ -59,6 +79,12 @@ const saveHistory = async (action, status, role) => {
 };
 
 app.get('/', (req, res) => res.status(200).send('Guardian Voice Backend running'));
+
+app.post('/api/verify-owner', (req, res) => {
+    const { pin } = req.body;
+    if (pin === ADMIN_PIN) res.status(200).json({ success: true });
+    else res.status(401).json({ success: false, error: "Invalid Owner PIN" });
+});
 
 app.get('/api/history', async (req, res) => {
     const { pin } = req.query;
