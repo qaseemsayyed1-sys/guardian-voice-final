@@ -693,7 +693,7 @@ function App() {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/3 flex flex-col gap-6">
+        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto">
 
           {!isEasyMode && (
             <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
