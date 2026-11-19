@@ -20,6 +20,8 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [isLockdown, setIsLockdown] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [ownerPin, setOwnerPin] = useState("");
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -94,10 +96,15 @@ function App() {
     setIsLoading(false);
   };
 
-  const fetchHistory = async () => {
-    const res = await axios.get(HISTORY_URL);
-    setHistoryData(res.data);
-    setShowHistory(true);
+  const fetchHistoryWithPin = async () => {
+    try {
+      const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
+      setHistoryData(res.data);
+      setShowPinModal(false);
+      setShowHistory(true);
+    } catch (error) {
+      alert("Invalid Owner PIN");
+    }
   };
 
   return (
@@ -112,11 +119,25 @@ function App() {
         </div>
       )}
 
+      {showPinModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
+          <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-stone-200">
+            <h2 className="text-xl font-bold text-stone-900 mb-2">Owner Access Only</h2>
+            <p className="text-sm text-stone-500 mb-4">Enter your 4-digit PIN to view activity logs.</p>
+            <input type="password" value={ownerPin} onChange={(e) => setOwnerPin(e.target.value)} maxLength={4} className="w-full bg-[#F4F1EA] border border-stone-300 rounded-xl px-4 py-3 text-center text-2xl tracking-widest font-mono mb-4" />
+            <div className="flex gap-2">
+              <button onClick={() => setShowPinModal(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100 w-full">Cancel</button>
+              <button onClick={fetchHistoryWithPin} className="px-4 py-2 rounded-lg font-bold text-white bg-teal-800 hover:bg-teal-900 w-full">Verify</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showHistory && (
         <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
           <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-md shadow-2xl border border-stone-200">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-stone-900">Activity Logs</h2>
+              <h2 className="text-xl font-bold text-stone-900">Owner Audit Logs</h2>
               <button onClick={() => setShowHistory(false)} className="text-red-500 font-bold text-xl">✕</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto space-y-2">
@@ -124,7 +145,7 @@ function App() {
                 <div key={i} className="bg-white p-3 rounded-lg border border-stone-200 flex justify-between items-center text-sm shadow-sm">
                   <div>
                     <p className="font-bold text-stone-800">{item.action}</p>
-                    <p className="text-xs text-stone-400">{item.time}</p>
+                    <p className="text-xs text-stone-400">{item.role} • {item.time}</p>
                   </div>
                   <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('DENIED') || item.status.includes('LOCKDOWN') || item.status.includes('VETO') ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>{item.status}</span>
                 </div>
@@ -150,7 +171,7 @@ function App() {
               </div>
               <div className="flex flex-wrap gap-2 items-center">
                   <span className={`px-2 py-1 rounded text-[10px] font-bold border ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>Threat: {threatLevel}</span>
-                  <button onClick={fetchHistory} className="text-[10px] bg-stone-200 text-stone-800 px-2 py-1.5 rounded-lg font-bold hover:bg-stone-300 border border-stone-300">📜 Logs</button>
+                  <button onClick={() => setShowPinModal(true)} className="text-[10px] bg-stone-200 text-stone-800 px-2 py-1.5 rounded-lg font-bold hover:bg-stone-300 border border-stone-300">📜 Logs</button>
               </div>
           </div>
           

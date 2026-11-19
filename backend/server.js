@@ -1,8 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const admin = require('firebase-admin');
 
 const app = express();
 app.use(cors());
@@ -10,8 +9,19 @@ app.use(express.json({ limit: '10mb' }));
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const DATA_FILE = path.join(__dirname, 'history.json');
 const GEMINI_MODELS = ["gemini-3.5-flash"];
+const ADMIN_PIN = "1234"; // Owner ka secret PIN
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  })
+});
+
+const db = admin.firestore();
+const historyRef = db.collection('history');
 
 let guestLinkToken = null;
 let isGuestMode = false;
@@ -22,31 +32,52 @@ let isAddingFamily = false;
 let currentSecurityCode = "8429";
 let isMusicPlaying = false;
 
-let actionHistory = [];
-if (fs.existsSync(DATA_FILE)) {
-    try { actionHistory = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) { actionHistory = []; }
-}
-
-const saveHistory = () => { 
-    try { fs.writeFileSync(DATA_FILE, JSON.stringify(actionHistory, null, 2)); } catch(e) {} 
+const saveHistory = async (action, status, role) => {
+    try {
+        await historyRef.add({
+            action,
+            status,
+            role,
+            time: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Firebase History Error:", e);
+    }
 };
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 app.get('/', (req, res) => res.status(200).send('Guardian Voice Backend running'));
 
-app.get('/api/mcp/tools', (req, res) => {
-    res.status(200).json({
-        protocol: "MCP", version: "2025-11-25",
-        tools: [
-            { name: "unlock_door", description: "Unlocks the smart door", risk: "HIGH" },
-            { name: "play_music", description: "Plays music on speaker", risk: "LOW" },
-            { name: "analyze_image", description: "Processes images for accessibility", risk: "MEDIUM" }
-        ]
-    });
+app.post('/api/verify-owner', (req, res) => {
+    const { pin } = req.body;
+    if (pin === ADMIN_PIN) {
+        res.status(200).json({ success: true });
+    } else {
+        res.status(401).json({ success: false, error: "Invalid Owner PIN" });
+    }
 });
 
-app.get('/api/history', (req, res) => res.status(200).json(actionHistory));
+app.get('/api/history', async (req, res) => {
+    const { pin } = req.query;
+    if (pin !== ADMIN_PIN) {
+        return res.status(403).json({ error: "Unauthorized. Owner PIN required." });
+    }
+
+    try {
+        const snapshot = await historyRef.orderBy('time', 'desc').limit(50).get();
+        const history = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                action: data.action,
+                status: data.status,
+                role: data.role,
+                time: data.time ? data.time.toDate().toLocaleString() : 'Just Now'
+            };
+        });
+        res.status(200).json(history);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch history" });
+    }
+});
 
 app.post('/api/reset', (req, res) => {
     isOwnerVerified = false; isGuestMode = false; isFamilyMode = false; isAddingFamily = false; isAwaitingPassphrase = false; currentSecurityCode = "8429"; isMusicPlaying = false;
@@ -61,13 +92,12 @@ app.post('/api/analyze-image', async (req, res) => {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const response = await axios.post(
             `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${GEMINI_API_KEY}`,
-            { contents: [{ parts: [{ text: "You are Guardian Voice. Analyze this image and help the user (especially elderly). Keep it short and helpful." }, { inline_data: { mime_type: "image/jpeg", data: base64Data } }] }] }
+            { contents: [{ parts: [{ text: "You are Guardian Voice. Analyze this image and help the user." }, { inline_data: { mime_type: "image/jpeg", data: base64Data } }] }] }
         );
-        actionHistory.push({ action: "Image Analyzed for Accessibility", status: "SUCCESS", time: new Date().toLocaleString() });
-        saveHistory();
+        await saveHistory("Image Analyzed", "SUCCESS", "Owner");
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
     } catch (error) {
-        return res.status(500).json({ reply: "I couldn't analyze the image. Try again.", uiUpdate: {} });
+        return res.status(500).json({ reply: "I couldn't analyze the image.", uiUpdate: {} });
     }
 });
 
@@ -77,7 +107,7 @@ app.post('/api/chat', async (req, res) => {
 
     if (msgLower.includes("dark") || msgLower.includes("night")) { 
         isOwnerVerified = true; isGuestMode = false; isAwaitingPassphrase = false; isFamilyMode = false;
-        actionHistory.push({ action: "Owner Authenticated", status: "SUCCESS", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory("Owner Authenticated", "SUCCESS", "Owner");
         return res.status(200).json({ reply: "Passphrase verified. Welcome back, Owner.", uiUpdate: { guestMode: false } });
     }
 
@@ -89,7 +119,7 @@ app.post('/api/chat', async (req, res) => {
     if (isAddingFamily) {
         isAddingFamily = false; isFamilyMode = true; isOwnerVerified = false; 
         const memberName = message.trim(); 
-        actionHistory.push({ action: `Family Member Added: ${memberName}`, status: "SUCCESS", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory(`Family Member Added: ${memberName}`, "SUCCESS", "Owner");
         return res.status(200).json({ reply: `${memberName} added with restricted access.`, uiUpdate: { guestMode: true } });
     }
 
@@ -104,19 +134,19 @@ app.post('/api/chat', async (req, res) => {
     }
 
     if (isFamilyMode && msgLower.includes("unlock")) {
-        actionHistory.push({ action: "Family Unlock Attempt", status: "DENIED", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory("Family Unlock Attempt", "DENIED", "Family");
         return res.status(200).json({ reply: "Access Denied. Only primary owner can perform this.", uiUpdate: {} });
     }
 
     if (msgLower.includes("unlock") && !isOwnerVerified && !isFamilyMode) {
         isGuestMode = true;
-        actionHistory.push({ action: "Unauthorized Unlock Attempt", status: "LOCKDOWN", time: new Date().toLocaleString() }); saveHistory();
-        return res.status(200).json({ reply: "CRITICAL ALERT: Unauthorized access detected. Lockdown initiated.", uiUpdate: { triggerLockdown: true, guestMode: true } });
+        await saveHistory("Unauthorized Unlock Attempt", "LOCKDOWN", "Guest");
+        return res.status(200).json({ reply: "CRITICAL ALERT: Unauthorized access detected.", uiUpdate: { triggerLockdown: true, guestMode: true } });
     }
 
     if (msgLower.includes("unlock") && isOwnerVerified) {
         currentSecurityCode = Math.floor(1000 + Math.random() * 9000).toString();
-        return res.status(200).json({ reply: "Generated a new 4-digit code. Please confirm.", uiUpdate: { showCode: true, code: currentSecurityCode } });
+        return res.status(200).json({ reply: "Generated code. Please confirm.", uiUpdate: { showCode: true, code: currentSecurityCode } });
     }
 
     if (msgLower.includes(currentSecurityCode) && isOwnerVerified) {
@@ -124,18 +154,18 @@ app.post('/api/chat', async (req, res) => {
     }
 
     if (msgLower === "veto") {
-        actionHistory.push({ action: "Door Unlock", status: "VETOED", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory("Door Unlock", "VETOED", "Owner");
         return res.status(200).json({ reply: "Action vetoed by owner.", uiUpdate: { clearPending: true } });
     }
     
     if (msgLower === "accept") {
-        actionHistory.push({ action: "Door Unlock", status: "APPROVED", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory("Door Unlock", "APPROVED", "Owner");
         return res.status(200).json({ reply: "Action approved.", uiUpdate: { clearPending: true } });
     }
 
     if (msgLower.includes("music") || msgLower.includes("play")) {
         isMusicPlaying = true;
-        actionHistory.push({ action: "Music Played", status: "LOW-RISK", time: new Date().toLocaleString() }); saveHistory();
+        await saveHistory("Music Played", "LOW-RISK", "Owner");
         return res.status(200).json({ reply: `Playing Jazz Vibes.`, uiUpdate: { playMusic: true, trackUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" } });
     }
 
@@ -146,11 +176,11 @@ app.post('/api/chat', async (req, res) => {
     try {
         const response = await axios.post(
             `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${GEMINI_API_KEY}`,
-            { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice, a smart home AI. Keep answers concise. User: ${message}` }] }] }
+            { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
         );
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
     } catch (error) {
-        return res.status(200).json({ reply: "Running in offline mode. Core security features active.", uiUpdate: {} });
+        return res.status(200).json({ reply: "Running in offline mode.", uiUpdate: {} });
     }
 });
 
