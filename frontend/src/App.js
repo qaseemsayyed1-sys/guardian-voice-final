@@ -26,6 +26,9 @@ function App() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiStatus, setAiStatus] = useState("Gemini Active");
   const [isEasyMode, setIsEasyMode] = useState(false);
+  const [securityLogs] = useState([]);
+  const [verificationRequired] = useState(false);
+  const [pendingApproval] = useState(null);
 
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
