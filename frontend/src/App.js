@@ -4,589 +4,212 @@ import axios from 'axios';
 const BACKEND_URL = 'https://guardian-voice-final.onrender.com/api/chat';
 const RESET_URL = 'https://guardian-voice-final.onrender.com/api/reset';
 const HISTORY_URL = 'https://guardian-voice-final.onrender.com/api/history';
+const VISION_URL = 'https://guardian-voice-final.onrender.com/api/analyze-image';
 
 function App() {
-  const [messages, setMessages] = useState([
-    { sender: 'ai', text: 'Hello! I am Guardian Voice. How can I help you today?' }
-  ]);
+  const [messages, setMessages] = useState([{ sender: 'ai', text: 'Guardian Voice active. System secure. How can I help?' }]);
   const [input, setInput] = useState('');
   const [showCodeBox, setShowCodeBox] = useState(false);
   const [showVetoPanel, setShowVetoPanel] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(""); 
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-  const [currentPlaylist, setCurrentPlaylist] = useState(null);
-  const [isGuest, setIsGuest] = useState(false);
-  const [isLockdown, setIsLockdown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [aiStatus, setAiStatus] = useState("Gemini Active");
   const [threatLevel, setThreatLevel] = useState("LOW");
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
-  const [showGuestLink, setShowGuestLink] = useState(false);
-  const [generatedGuestLink, setGeneratedGuestLink] = useState("");
-  const [isGuestRequest, setIsGuestRequest] = useState(false);
-  
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [isLockdown, setIsLockdown] = useState(false);
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, showCodeBox, showVetoPanel, showEmergency, isLockdown, isSpeaking]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('guest')) {
-        setIsGuestRequest(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
-    axios.post(RESET_URL)
-      .then(() => {
-        setIsGuest(false);
-        setShowCodeBox(false);
-        setShowVetoPanel(false);
-        setIsLockdown(false);
-      })
-      .catch(err => console.log("Reset failed"));
+    axios.post(RESET_URL).catch(() => {});
   }, []);
 
   const speak = (text) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel(); 
       const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      const alexaVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Zira'));
-      if (alexaVoice) utterance.voice = alexaVoice;
-      utterance.rate = 1.0; 
-      utterance.pitch = 1.1; 
-      
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
-      
       window.speechSynthesis.speak(utterance);
     }
   };
 
-  const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Browser voice support nahi karta. Chrome use karein.");
-      return;
-    }
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => setIsListening(true);
-    
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
-      handleSend(null, transcript); 
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded for Analysis]' }]);
+      setIsLoading(true);
+      
+      try {
+        const res = await axios.post(VISION_URL, { imageBase64: reader.result });
+        setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
+        speak(res.data.reply);
+      } catch (error) {
+        setMessages(prev => [...prev, { sender: 'ai', text: 'Error processing image.' }]);
+      }
+      setIsLoading(false);
     };
-
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-
-    recognition.start();
+    reader.readAsDataURL(file);
   };
 
-  const handleSend = async (e, voiceText = null) => {
+  const handleSend = async (e, text = null) => {
     if (e) e.preventDefault();
-    const userMessage = voiceText || input;
+    const userMessage = text || input;
     if (!userMessage.trim()) return;
 
-    setMessages((prev) => [...prev, { sender: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { sender: 'user', text: userMessage }]);
     setInput('');
     setIsLoading(true);
-    setShowEmergency(false);
-    setAiStatus("Processing...");
 
     try {
-      const response = await axios.post(BACKEND_URL, { message: userMessage });
-      const data = response.data;
-      
-      setMessages((prev) => [...prev, { sender: 'ai', text: data.reply }]);
+      const res = await axios.post(BACKEND_URL, { message: userMessage });
+      const data = res.data;
+      setMessages(prev => [...prev, { sender: 'ai', text: data.reply }]);
       speak(data.reply);
 
-      if (data.reply.includes("temporarily busy") || data.reply.includes("offline mode")) {
-          setAiStatus("Fallback Mode");
-      } else {
-          setAiStatus("Gemini Active");
-      }
-
-      if (data.uiUpdate?.silentSOS) {
-        setMessages((prev) => [...prev, { sender: 'ai', text: '[SILENT SOS SENT TO AUTHORITIES]' }]);
-      }
-      if (data.uiUpdate?.guestMode !== undefined) setIsGuest(data.uiUpdate.guestMode);
       if (data.uiUpdate?.triggerLockdown) {
         setThreatLevel("HIGH");
         setIsLockdown(true);
-        setTimeout(() => setIsLockdown(false), 5000); 
-        setTimeout(() => setThreatLevel("LOW"), 6000);
+        setTimeout(() => { setIsLockdown(false); setThreatLevel("LOW"); }, 5000);
       }
-      
-      if (data.reply.includes("Access Denied") || data.reply.includes("Incorrect passphrase") || data.reply.includes("Unauthorized")) {
-        setThreatLevel("HIGH");
-        setTimeout(() => setThreatLevel("LOW"), 5000); 
-      }
-
-      if (data.uiUpdate?.showCode) {
-        setShowCodeBox(true);
-        setGeneratedCode(data.uiUpdate.code);
-      }
-      if (data.uiUpdate?.showPending) {
-        setShowCodeBox(false);
-        setShowVetoPanel(true);
-      }
-      if (data.uiUpdate?.clearPending) {
-        setShowVetoPanel(false);
-        setShowCodeBox(false);
-      }
-      
-      if (data.uiUpdate?.playMusic) {
-        if (audioRef.current) {
-          audioRef.current.src = data.uiUpdate.trackUrl;
-          audioRef.current.volume = 0.3;
-          audioRef.current.play().catch(e => console.log("Audio blocked"));
-          setCurrentPlaylist(data.uiUpdate.playlistName); 
-        }
-      }
-      
-      if (data.uiUpdate?.stopMusic) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          setCurrentPlaylist(null);
-        }
-      }
-
-      if (data.uiUpdate?.showEmergency) setShowEmergency(true);
-
+      if (data.uiUpdate?.showCode) { setShowCodeBox(true); setGeneratedCode(data.uiUpdate.code); }
+      if (data.uiUpdate?.showPending) { setShowCodeBox(false); setShowVetoPanel(true); }
+      if (data.uiUpdate?.clearPending) { setShowVetoPanel(false); setShowCodeBox(false); }
+      if (data.uiUpdate?.playMusic) { audioRef.current.src = data.uiUpdate.trackUrl; audioRef.current.play(); }
+      if (data.uiUpdate?.showEmergency) { setShowEmergency(true); }
+      if (data.uiUpdate?.guestMode !== undefined) { setIsGuest(data.uiUpdate.guestMode); }
     } catch (error) {
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Connection error. Wake up backend.' }]);
-      setAiStatus("Offline");
-    }
-    setIsLoading(false);
-  };
-
-  const handleVeto = async () => {
-    setMessages((prev) => [...prev, { sender: 'user', text: 'VETO' }]);
-    speak("Action vetoed. The task remains blocked.");
-    setIsLoading(true);
-    try {
-      const response = await axios.post(BACKEND_URL, { message: 'veto' });
-      setMessages((prev) => [...prev, { sender: 'ai', text: response.data.reply }]);
-      setShowVetoPanel(false);
-    } catch (error) {
-      console.error(error);
-    }
-    setIsLoading(false);
-  };
-
-  const handleAccept = async () => {
-    setMessages((prev) => [...prev, { sender: 'user', text: 'ACCEPT' }]);
-    speak("Action approved. Executing task now.");
-    setIsLoading(true);
-    try {
-      const response = await axios.post(BACKEND_URL, { message: 'accept' });
-      setMessages((prev) => [...prev, { sender: 'ai', text: response.data.reply }]);
-      setShowVetoPanel(false);
-    } catch (error) {
-      console.error(error);
+      setMessages(prev => [...prev, { sender: 'ai', text: 'Connection error.' }]);
     }
     setIsLoading(false);
   };
 
   const fetchHistory = async () => {
-    try {
-      const res = await axios.get(HISTORY_URL);
-      setHistoryData(res.data);
-      setShowHistory(true);
-    } catch (error) {
-      console.log("Error fetching history", error);
-    }
+    const res = await axios.get(HISTORY_URL);
+    setHistoryData(res.data);
+    setShowHistory(true);
   };
-
-  const submitFeedback = async () => {
-    if(!feedbackText.trim()) return;
-    try {
-        await axios.post('https://guardian-voice-final.onrender.com/api/feedback', { text: feedbackText });
-        alert("Thank you! Your feedback has been recorded.");
-        setFeedbackText("");
-        setShowFeedback(false);
-    } catch (error) {
-        console.error("Feedback error", error);
-    }
-  };
-
-  const generateGuestLink = async () => {
-    try {
-        const res = await axios.post('https://guardian-voice-final.onrender.com/api/generate-link');
-        setGeneratedGuestLink(res.data.link);
-        setShowGuestLink(true);
-    } catch (error) {
-        console.error(error);
-    }
-  };
-
-  const requestAccess = async () => {
-    const token = new URLSearchParams(window.location.search).get('guest');
-    try {
-        const res = await axios.post('https://guardian-voice-final.onrender.com/api/guest-request', { token });
-        alert(res.data.message);
-        setShowVetoPanel(true);
-    } catch (error) {
-        alert("Invalid or expired link.");
-    }
-  };
-
-  const runAutoDemo = async () => {
-    if (isAutoPlaying) return;
-    setIsAutoPlaying(true);
-    setMessages([{ sender: 'ai', text: 'Starting automated demo sequence...' }]);
-    
-    await new Promise(r => setTimeout(r, 2000));
-    setMessages(prev => [...prev, { sender: 'user', text: 'Alexa, unlock the front door.' }]);
-    await new Promise(r => setTimeout(r, 1000));
-    
-    try {
-      const res1 = await axios.post(BACKEND_URL, { message: 'unlock the front door' });
-      setMessages(prev => [...prev, { sender: 'ai', text: res1.data.reply }]);
-      speak(res1.data.reply);
-      setShowCodeBox(true);
-      setGeneratedCode(res1.data.uiUpdate.code);
-
-      await new Promise(r => setTimeout(r, 6000));
-      setMessages(prev => [...prev, { sender: 'user', text: `The code is ${res1.data.uiUpdate.code}` }]);
-      await new Promise(r => setTimeout(r, 1000));
-
-      const res2 = await axios.post(BACKEND_URL, { message: res1.data.uiUpdate.code });
-      setMessages(prev => [...prev, { sender: 'ai', text: res2.data.reply }]);
-      speak(res2.data.reply);
-      setShowCodeBox(false);
-      setShowVetoPanel(true);
-
-      await new Promise(r => setTimeout(r, 4000));
-      setMessages(prev => [...prev, { sender: 'user', text: 'VETO' }]);
-      await new Promise(r => setTimeout(r, 1000));
-      
-      const res3 = await axios.post(BACKEND_URL, { message: 'veto' });
-      setMessages(prev => [...prev, { sender: 'ai', text: res3.data.reply }]);
-      speak(res3.data.reply);
-      setShowVetoPanel(false);
-
-    } catch (error) {
-      console.error(error);
-    }
-    setIsAutoPlaying(false);
-  };
-
-  if (isGuestRequest) {
-    return (
-        <div className="min-h-screen flex justify-center items-center bg-stone-100 p-4">
-            <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
-                <h1 className="text-2xl font-bold mb-4">Guardian Voice</h1>
-                <p className="text-stone-500 mb-6">You have been invited for remote access. Click below to request entry.</p>
-                <button onClick={requestAccess} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold w-full hover:bg-blue-700">Request Access</button>
-            </div>
-        </div>
-    );
-  }
 
   return (
-    <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
-      
+    <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#0F172A] text-slate-200'}`}>
       <audio ref={audioRef} />
+      <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
 
       {isLockdown && (
-        <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/60 via-transparent to-transparent"></div>
-            <svg className="w-32 h-32 text-red-500 mb-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            <h1 className="text-red-500 font-mono font-bold text-5xl tracking-widest mb-4 relative z-10">LOCKDOWN</h1>
-            <p className="text-red-200 font-mono text-lg relative z-10">SECURITY BREACH DETECTED</p>
-            <p className="text-red-400 font-mono text-sm mt-4 animate-ping relative z-10">Isolating system...</p>
+        <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse">
+            <h1 className="text-red-500 font-mono font-bold text-6xl tracking-widest mb-4">LOCKDOWN</h1>
+            <p className="text-red-200 text-lg">SECURITY BREACH DETECTED</p>
         </div>
       )}
 
       {showHistory && (
         <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
-          <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-stone-900">Activity Logs</h2>
+              <h2 className="text-xl font-bold text-white">Persistent Audit Logs</h2>
               <button onClick={() => setShowHistory(false)} className="text-red-500 font-bold text-xl">✕</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto space-y-2">
-              {historyData.length === 0 ? <p className="text-stone-500 text-sm">No actions recorded yet.</p> : 
-                historyData.map((item, index) => (
-                  <div key={index} className="bg-white p-3 rounded-lg border border-stone-200 flex justify-between items-center text-sm shadow-sm">
-                    <div>
-                      <p className="font-bold text-stone-800">{item.action}</p>
-                      <p className="text-xs text-stone-400">{item.time}</p>
-                    </div>
-                    <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('VETO') || item.status.includes('LOCKDOWN') || item.status.includes('DENIED') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                      {item.status}
-                    </span>
+              {historyData.map((item, i) => (
+                <div key={i} className="bg-slate-700 p-3 rounded-lg flex justify-between items-center text-sm border border-slate-600">
+                  <div>
+                    <p className="font-bold text-white">{item.action}</p>
+                    <p className="text-xs text-slate-400">{item.time}</p>
                   </div>
-                ))
-              }
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showFeedback && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold text-stone-900 mb-2">MVP Feedback Loop</h2>
-            <p className="text-sm text-stone-500 mb-4">Help us improve Guardian Voice. Report a bug or suggest a feature.</p>
-            <textarea 
-                value={feedbackText} 
-                onChange={(e) => setFeedbackText(e.target.value)}
-                placeholder="Type your feedback here..."
-                className="w-full border border-stone-300 rounded-xl p-3 mb-4 text-sm focus:outline-none focus:border-stone-900 h-24 resize-none"
-            />
-            <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowFeedback(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100">Cancel</button>
-                <button onClick={submitFeedback} className="px-6 py-2 rounded-lg font-bold text-white bg-stone-900 hover:bg-stone-800">Submit</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showGuestLink && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
-            <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                <h2 className="text-xl font-bold text-stone-900 mb-2">Remote Access Link</h2>
-                <p className="text-sm text-stone-500 mb-4">Share this magic link with your guest. They will need your approval to unlock the door.</p>
-                <input type="text" readOnly value={generatedGuestLink} className="w-full bg-stone-100 border border-stone-300 rounded-xl p-3 mb-4 text-xs" />
-                <div className="flex gap-3 justify-end">
-                    <button onClick={() => setShowGuestLink(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100">Close</button>
+                  <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('DENIED') || item.status.includes('LOCKDOWN') || item.status.includes('VETO') ? 'bg-red-900 text-red-300' : 'bg-green-900 text-green-300'}`}>{item.status}</span>
                 </div>
+              ))}
             </div>
+          </div>
         </div>
       )}
 
-      <div className={`w-full max-w-6xl rounded-3xl shadow-2xl border flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200'}`}>
+      <div className="w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-700 flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] bg-[#1E293B]">
         
-        <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
+        <div className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-slate-700">
           
-          <div className={`p-4 md:p-6 border-b flex flex-col md:flex-row gap-3 justify-between items-start md:items-center z-10 ${showEmergency ? 'bg-red-900 border-red-800 text-white' : 'bg-[#FDFCF8] border-stone-200'}`}>
+          <div className="p-4 md:p-6 border-b border-slate-700 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center bg-[#0F172A]">
               <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${showEmergency ? 'bg-white text-red-900' : 'bg-stone-900 text-[#F4F1EA]'}`}>
+                  <div className="p-2.5 rounded-xl bg-blue-600 text-white">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                   </div>
                   <div>
-                      <h1 className={`text-lg md:text-xl font-bold tracking-tight ${showEmergency ? 'text-white' : 'text-stone-900'}`}>Guardian Voice</h1>
-                      <p className={`text-[10px] md:text-xs font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>Alexa+ Simulator</p>
+                      <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Guardian Voice</h1>
+                      <p className="text-[10px] md:text-xs font-medium text-slate-400 uppercase">Enterprise Smart Home Security</p>
                   </div>
               </div>
-              <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
-                  <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase">
-                      <span className={`px-2 py-1 rounded border ${aiStatus === 'Fallback Mode' ? 'bg-amber-50 text-amber-600 border-amber-200' : aiStatus === 'Offline' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>AI: {aiStatus}</span>
-                      <span className={`px-2 py-1 rounded border font-bold ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-green-50 text-green-600 border-green-200'}`}>
-                          Threat: {threatLevel}
-                      </span>
-                  </div>
-                  {isGuest && (
-                      <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wide border border-amber-300">
-                          Guest
-                      </span>
-                  )}
-                  <button onClick={fetchHistory} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${showEmergency ? 'bg-red-800 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
-                      📜 Logs
-                  </button>
-                  <button onClick={() => setShowFeedback(true)} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300`}>
-                      💡 Feedback
-                  </button>
-                  <button onClick={generateGuestLink} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300`}>
-                      🔗 Guest Link
-                  </button>
-                  <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-[10px] md:text-xs px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
-                      {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
-                  </button>
+              <div className="flex flex-wrap gap-2 items-center">
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold border ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600' : 'bg-emerald-900 text-emerald-400 border-emerald-700'}`}>Threat: {threatLevel}</span>
+                  <button onClick={fetchHistory} className="text-[10px] bg-slate-700 text-white px-2 py-1.5 rounded-lg font-bold hover:bg-slate-600 border border-slate-600">📜 Logs</button>
               </div>
           </div>
-
-          {currentPlaylist && (
-            <div className="bg-[#F4F1EA] border-b border-stone-200 px-4 md:px-6 py-2 md:py-3 flex items-center justify-between animate-in slide-in-from-top duration-300">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1 h-4 items-end">
-                  <div className="w-1 bg-stone-800 animate-[bounce_1s_infinite] h-full"></div>
-                  <div className="w-1 bg-stone-800 animate-[bounce_1.2s_infinite] h-2/3"></div>
-                  <div className="w-1 bg-stone-800 animate-[bounce_0.8s_infinite] h-full"></div>
-                </div>
-                <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-stone-600">Now Playing: {currentPlaylist}</span>
-              </div>
-              <button onClick={() => { audioRef.current.pause(); setCurrentPlaylist(null); }} className="text-[10px] md:text-xs font-bold text-red-600 hover:text-red-800 uppercase">Stop</button>
-            </div>
-          )}
           
-          <div className={`relative flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
-            
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
-                <svg className="w-64 h-64 md:w-96 md:h-96 text-stone-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            </div>
-
-            <div className="relative z-10">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`flex mb-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {isSpeaking && (
-                    <div className="flex justify-start ml-2 mb-2">
-                        <div className="bg-stone-900 px-3 py-2 md:px-4 md:py-3 rounded-2xl flex gap-1 items-end h-8 md:h-10 shadow-md">
-                            <div className="w-1 bg-emerald-400 animate-[bounce_1s_infinite] h-3 md:h-4"></div>
-                            <div className="w-1 bg-emerald-400 animate-[bounce_1.2s_infinite] h-5 md:h-6"></div>
-                            <div className="w-1 bg-emerald-400 animate-[bounce_0.8s_infinite] h-2 md:h-3"></div>
-                            <div className="w-1 bg-emerald-400 animate-[bounce_1.1s_infinite] h-4 md:h-5"></div>
-                        </div>
-                    </div>
-                )}
-                {isLoading && (
-                    <div className="flex items-center gap-2 md:gap-3 ml-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 md:px-4 md:py-2 rounded-full w-max animate-pulse border border-emerald-200">
-                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
-                        <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase">Thinking...</span>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#0F172A]/50">
+            {messages.map((msg, index) => (
+              <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {isLoading && <div className="text-slate-400 text-xs animate-pulse">Processing...</div>}
+            <div ref={messagesEndRef} />
           </div>
 
-          <div className={`px-4 md:px-6 pt-3 md:pt-4 flex gap-2 overflow-x-auto pb-2 ${showEmergency ? 'bg-red-900' : 'bg-[#FDFCF8]'}`}>
-              <button onClick={() => handleSend(null, "unlock the door")} className="text-[10px] md:text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold whitespace-nowrap transition">
-                  🔒 Unlock Door
-              </button>
-              <button onClick={() => handleSend(null, "play music")} className="text-[10px] md:text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold whitespace-nowrap transition">
-                  🎵 Play Music
-              </button>
-              <button onClick={() => handleSend(null, "add family member")} className="text-[10px] md:text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold whitespace-nowrap transition">
-                  👨‍👩‍👧 Add Family
-              </button>
-              <button onClick={fetchHistory} className="text-[10px] md:text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold whitespace-nowrap transition">
-                  📜 View Logs
-              </button>
-          </div>
-
-          <div className={`p-4 md:p-6 border-t ${showEmergency ? 'bg-red-900 border-red-800' : 'bg-[#FDFCF8] border-stone-200'}`}>
-              <form onSubmit={handleSend} className="flex gap-2 md:gap-3">
-                <button type="button" onClick={startListening} className={`p-3 md:p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
-                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                </button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type message..." className={`flex-1 border rounded-xl px-3 md:px-5 py-2 md:py-4 focus:outline-none focus:ring-2 transition-all text-xs md:text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
-                <button type="submit" className={`px-5 md:px-8 py-2 md:py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}>
-                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                </button>
+          <div className="p-4 bg-[#0F172A] border-t border-slate-700">
+              <form onSubmit={handleSend} className="flex gap-2">
+                <button type="button" onClick={() => fileInputRef.current.click()} className="p-3 rounded-xl bg-slate-700 text-white hover:bg-slate-600">📷</button>
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Command..." className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500" />
+                <button type="submit" className="px-6 py-2 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-500">Send</button>
               </form>
           </div>
         </div>
 
-        <div className={`w-full md:w-1/2 p-4 md:p-8 flex flex-col relative ${showEmergency ? 'bg-red-950' : 'bg-[#F4F1EA]'}`}>
-          
-          <div className="mb-4 md:mb-8 bg-stone-900 rounded-2xl p-3 md:p-5 shadow-inner h-32 md:h-40 overflow-y-auto font-mono text-[10px] md:text-xs border border-stone-800">
-              <p className="text-stone-500 mb-2 md:mb-3 tracking-widest uppercase">System Security Logs</p>
+        <div className="w-full md:w-1/2 p-6 flex flex-col bg-[#1E293B]">
+          <div className="bg-[#0F172A] rounded-2xl p-4 h-40 overflow-y-auto font-mono text-xs text-green-400 border border-slate-700 mb-6">
+              <p className="text-slate-500 mb-2">System Security Logs</p>
               {messages.map((msg, i) => {
-                  if (msg.text.includes("Playing")) return <p key={i} className="text-emerald-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Music playback started.</p>;
-                  if (msg.text.includes("stopped")) return <p key={i} className="text-stone-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-stone-400 block"></span>[LOW-RISK] Music stopped.</p>;
-                  if (msg.text.includes("weather")) return <p key={i} className="text-emerald-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Weather fetched.</p>;
-                  if (msg.text.includes("Passphrase verified")) return <p key={i} className="text-emerald-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[SECURITY] Owner authenticated.</p>;
-                  if (msg.text.includes("Voice verification required")) return <p key={i} className="text-blue-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Awaiting passphrase.</p>;
-                  if (msg.text.includes("Unauthorized")) return <p key={i} className="text-red-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[SECURITY] Unauthorized access blocked.</p>;
-                  if (msg.text.includes("Emergency")) return <p key={i} className="text-red-500 mb-1 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-500 block"></span>[CRITICAL] Emergency protocol engaged!</p>;
-                  if (msg.text.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
-                  if (msg.text.includes("vetoed")) return <p key={i} className="text-red-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
-                  if (msg.text.includes("approved")) return <p key={i} className="text-emerald-400 mb-1 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
-                  if (msg.text.includes("lockdown")) return <p key={i} className="text-red-600 mb-1 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] System Lockdown Initiated!</p>;
-                  if (msg.text.includes("SILENT SOS")) return <p key={i} className="text-red-600 mb-1 flex items-center gap-2 animate-ping"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] Silent SOS transmitted!</p>;
+                  if (msg.text.includes("Owner")) return <p key={i} className="mb-1">[SECURITY] Owner Auth</p>;
+                  if (msg.text.includes("Unauthorized")) return <p key={i} className="text-red-400 mb-1">[ALERT] Unauthorized Access</p>;
                   return null;
               })}
           </div>
-
-          <div className="flex-1 flex flex-col items-center justify-start md:justify-center">
-              
-              {showEmergency && (
-                <div className="bg-red-900 border-2 border-red-500 p-6 md:p-8 rounded-3xl w-full max-w-md text-center shadow-2xl shadow-red-900/50 animate-pulse">
-                  <svg className="w-16 h-16 md:w-20 md:h-20 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  <h2 className="text-white font-bold text-2xl md:text-3xl mb-2 tracking-tight">EMERGENCY ALERT</h2>
-                  <p className="text-red-200">Emergency contacts have been notified.</p>
-                </div>
+          
+          <div className="flex-1 flex flex-col items-center justify-center">
+              {showCodeBox && (
+              <div className="bg-slate-800 border border-slate-600 p-8 rounded-3xl w-full max-w-md text-center">
+                  <h2 className="text-white font-bold text-2xl mb-4">Verification Code</h2>
+                  <div className="bg-[#0F172A] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-emerald-400 font-bold border border-slate-700">{generatedCode}</div>
+              </div>
               )}
 
-              {!showEmergency && showCodeBox && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-6 md:p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 border border-red-200">
-                      <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                  </div>
-                  <h2 className="text-stone-900 font-bold text-xl md:text-2xl mb-2 tracking-tight">Verification Required</h2>
-                  <p className="text-stone-500 mb-6 md:mb-8 text-xs md:text-sm">Please read this code aloud to proceed.</p>
-                  <div className="bg-[#F4F1EA] py-4 md:py-6 rounded-2xl tracking-[0.5em] text-4xl md:text-5xl font-mono text-stone-900 font-bold border border-stone-300 shadow-inner">
-                  {generatedCode}
+              {showVetoPanel && (
+              <div className="bg-slate-800 border border-amber-500 p-8 rounded-3xl w-full max-w-md text-center">
+                  <h2 className="text-white font-bold text-2xl mb-2">Pending Approval</h2>
+                  <div className="flex gap-4 mt-6">
+                    <button onClick={() => handleSend(null, 'accept')} className="bg-slate-700 text-white py-3 rounded-xl font-bold w-full">ACCEPT</button>
+                    <button onClick={() => handleSend(null, 'veto')} className="bg-red-600 text-white py-3 rounded-xl font-bold w-full">VETO</button>
                   </div>
               </div>
               )}
 
-              {!showEmergency && showVetoPanel && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-6 md:p-8 rounded-3xl w-full max-w-md text-center shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-in fade-in zoom-in duration-300">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 border border-amber-200">
-                      <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  </div>
-                  <h2 className="text-stone-900 font-bold text-xl md:text-2xl mb-1 tracking-tight">Pending Approval</h2>
-                  <p className="text-stone-500 text-xs md:text-sm mb-6 md:mb-8">A high-risk action requires your attention.</p>
-                  
-                  <div className="flex gap-2 md:gap-4 justify-center">
-                  <button onClick={handleAccept} className="bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 md:px-6 py-3 md:py-4 rounded-xl font-bold w-full transition-all text-xs md:text-sm tracking-wide">
-                      ACCEPT
-                  </button>
-                  <button onClick={handleVeto} className="bg-red-800 hover:bg-red-900 text-white px-4 md:px-6 py-3 md:py-4 rounded-xl font-bold w-full shadow-lg shadow-red-800/20 transition-all transform hover:scale-[1.02] text-xs md:text-sm tracking-wide">
-                      VETO
-                  </button>
-                  </div>
-              </div>
-              )}
-
-              {!showEmergency && !showCodeBox && !showVetoPanel && (
-              <div className="w-full max-w-md space-y-3 md:space-y-4">
-                  <div className="bg-white p-4 md:p-6 rounded-3xl shadow-sm border border-stone-200 flex flex-col items-center text-center">
-                      <div className="w-16 h-16 md:w-20 md:h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-3 md:mb-4 relative">
-                          <svg className="w-8 h-8 md:w-10 md:h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                          <span className="absolute top-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-emerald-500 border-2 border-white rounded-full animate-ping"></span>
-                          <span className="absolute top-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
-                      </div>
-                      <p className="text-base md:text-lg font-semibold text-stone-800 mb-1">System Secure</p>
-                      <p className="text-xs md:text-sm text-stone-500 mb-3 md:mb-4">All systems operational.</p>
-                      
-                      <div className="w-full bg-stone-50 rounded-xl p-2 md:p-3 border border-stone-100 flex items-center justify-between text-[10px] md:text-xs">
-                          <span className="text-stone-500 font-medium">Last Scan:</span>
-                          <span className="font-bold text-stone-700">Just Now</span>
-                      </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 md:gap-4">
-                      <div className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-stone-200">
-                          <p className="text-[9px] md:text-[10px] text-stone-400 font-bold uppercase mb-1">Active Roles</p>
-                          <p className="text-xs md:text-sm font-bold text-stone-800">{isGuest ? 'Owner + Guest' : 'Owner Only'}</p>
-                      </div>
-                      <div className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-stone-200">
-                          <p className="text-[9px] md:text-[10px] text-stone-400 font-bold uppercase mb-1">System Uptime</p>
-                          <p className="text-xs md:text-sm font-bold text-emerald-600">99.9%</p>
-                      </div>
-                  </div>
+              {!showCodeBox && !showVetoPanel && (
+              <div className="text-center text-slate-500">
+                  <p className="text-xl font-bold text-slate-300 mb-1">System Secure</p>
+                  <p className="text-sm">Monitoring active.</p>
+                  {isGuest && <p className="text-amber-400 mt-4 text-xs font-bold">GUEST MODE ACTIVE</p>}
               </div>
               )}
           </div>
