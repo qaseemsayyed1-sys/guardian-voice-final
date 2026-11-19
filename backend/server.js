@@ -101,7 +101,7 @@ app.post('/api/analyze-image', async (req, res) => {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
             { 
                 contents: [{ 
                     parts: [
@@ -198,7 +198,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
             { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
         );
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
