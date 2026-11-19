@@ -15,6 +15,7 @@ const GEMINI_MODELS = [
 
 let actionHistory = [];
 let feedbackData = [];
+let guestLinkToken = null;
 let isGuestMode = false;
 let isOwnerVerified = false;
 let isAwaitingPassphrase = false;
@@ -22,6 +23,7 @@ let isFamilyMode = false;
 let isAddingFamily = false;
 let currentSecurityCode = "8429";
 let isMusicPlaying = false;
+let pendingGuestRequest = false;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -55,6 +57,21 @@ app.post('/api/feedback', (req, res) => {
     return res.status(400).json({ error: "Feedback text is required." });
 });
 
+app.post('/api/generate-link', (req, res) => {
+    guestLinkToken = Math.random().toString(36).substring(2, 10);
+    return res.status(200).json({ link: `https://guardian-voice-final.onrender.com/?guest=${guestLinkToken}` });
+});
+
+app.post('/api/guest-request', (req, res) => {
+    const { token } = req.body;
+    if (token === guestLinkToken) {
+        pendingGuestRequest = true;
+        actionHistory.push({ action: "Remote Guest Access Request", status: "PENDING", time: new Date().toLocaleTimeString() });
+        return res.status(200).json({ success: true, message: "Access requested. Waiting for owner approval." });
+    }
+    return res.status(401).json({ error: "Invalid or expired link." });
+});
+
 app.post('/api/reset', (req, res) => {
     isOwnerVerified = false;
     isGuestMode = false;
@@ -63,6 +80,7 @@ app.post('/api/reset', (req, res) => {
     isAwaitingPassphrase = false;
     currentSecurityCode = "8429";
     isMusicPlaying = false;
+    pendingGuestRequest = false;
     res.status(200).json({ success: true, message: "Chat reset successfully" });
 });
 

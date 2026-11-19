@@ -25,6 +25,9 @@ function App() {
   const [threatLevel, setThreatLevel] = useState("LOW");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
+  const [showGuestLink, setShowGuestLink] = useState(false);
+  const [generatedGuestLink, setGeneratedGuestLink] = useState("");
+  const [isGuestRequest, setIsGuestRequest] = useState(false);
   
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -37,6 +40,13 @@ function App() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isLoading, showCodeBox, showVetoPanel, showEmergency, isLockdown, isSpeaking]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('guest')) {
+        setIsGuestRequest(true);
+    }
+  }, []);
 
   useEffect(() => {
     if ('speechSynthesis' in window) {
@@ -223,6 +233,27 @@ function App() {
     }
   };
 
+  const generateGuestLink = async () => {
+    try {
+        const res = await axios.post('https://guardian-voice-final.onrender.com/api/generate-link');
+        setGeneratedGuestLink(res.data.link);
+        setShowGuestLink(true);
+    } catch (error) {
+        console.error(error);
+    }
+  };
+
+  const requestAccess = async () => {
+    const token = new URLSearchParams(window.location.search).get('guest');
+    try {
+        const res = await axios.post('https://guardian-voice-final.onrender.com/api/guest-request', { token });
+        alert(res.data.message);
+        setShowVetoPanel(true);
+    } catch (error) {
+        alert("Invalid or expired link.");
+    }
+  };
+
   const runAutoDemo = async () => {
     if (isAutoPlaying) return;
     setIsAutoPlaying(true);
@@ -263,6 +294,18 @@ function App() {
     }
     setIsAutoPlaying(false);
   };
+
+  if (isGuestRequest) {
+    return (
+        <div className="min-h-screen flex justify-center items-center bg-stone-100 p-4">
+            <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
+                <h1 className="text-2xl font-bold mb-4">Guardian Voice</h1>
+                <p className="text-stone-500 mb-6">You have been invited for remote access. Click below to request entry.</p>
+                <button onClick={requestAccess} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold w-full hover:bg-blue-700">Request Access</button>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
@@ -324,6 +367,19 @@ function App() {
         </div>
       )}
 
+      {showGuestLink && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
+            <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
+                <h2 className="text-xl font-bold text-stone-900 mb-2">Remote Access Link</h2>
+                <p className="text-sm text-stone-500 mb-4">Share this magic link with your guest. They will need your approval to unlock the door.</p>
+                <input type="text" readOnly value={generatedGuestLink} className="w-full bg-stone-100 border border-stone-300 rounded-xl p-3 mb-4 text-xs" />
+                <div className="flex gap-3 justify-end">
+                    <button onClick={() => setShowGuestLink(false)} className="px-4 py-2 rounded-lg font-bold text-stone-600 hover:bg-stone-100">Close</button>
+                </div>
+            </div>
+        </div>
+      )}
+
       <div className={`w-full max-w-6xl rounded-3xl shadow-2xl border flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200'}`}>
         
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
@@ -355,6 +411,9 @@ function App() {
                   </button>
                   <button onClick={() => setShowFeedback(true)} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300`}>
                       💡 Feedback
+                  </button>
+                  <button onClick={generateGuestLink} className={`text-[10px] md:text-xs px-2 md:px-3 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300`}>
+                      🔗 Guest Link
                   </button>
                   <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-[10px] md:text-xs px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
                       {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
