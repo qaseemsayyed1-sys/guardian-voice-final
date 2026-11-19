@@ -493,26 +493,31 @@ function App() {
               </div>
               <div>
                 <h1 className={`text-xl font-bold tracking-tight ${showEmergency ? 'text-white' : 'text-stone-900'}`}>Guardian Voice</h1>
-                <p className={`text-xs font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>Smart Home Security</p>
+                <p className={`${isEasyMode ? 'text-base' : 'text-xs'} font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>
+                  {isEasyMode ? 'Your Home Assistant' : 'Smart Home Security'}
+                </p>
               </div>
             </div>
 
-            <div className="flex gap-2 items-center">
-              <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase mr-2">
-                <span className={`px-2 py-1 rounded border ${aiStatus === 'Fallback Mode' ? 'bg-amber-50 text-amber-600 border-amber-200' : aiStatus === 'Offline' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
-                  AI: {aiStatus}
-                </span>
-                <span className="text-stone-600 bg-stone-100 px-2 py-1 rounded border border-stone-200 hidden sm:block">Threat: LOW</span>
-              </div>
+            <div className="flex gap-2 items-center flex-wrap justify-end">
+              {!isEasyMode && (
+                <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase mr-2">
+                  <span className={`px-2 py-1 rounded border ${aiStatus === 'Fallback Mode' ? 'bg-amber-50 text-amber-600 border-amber-200' : aiStatus === 'Offline' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+                    AI: {aiStatus}
+                  </span>
+                  <span className="text-stone-600 bg-stone-100 px-2 py-1 rounded border border-stone-200 hidden sm:block">Threat: LOW</span>
+                </div>
+              )}
 
               {isGuest && (
                 <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide border border-amber-300">
                   Guest Mode
                 </span>
               )}
+
               <button
-                onClick={() => setIsEasyMode(!isEasyMode)}
-                className="px-3 py-2 rounded-lg bg-blue-100 text-blue-800 font-bold text-sm"
+                onClick={() => setIsEasyMode(prev => !prev)}
+                className={`px-3 py-2 rounded-lg font-bold ${isEasyMode ? 'bg-blue-700 text-white' : 'bg-blue-100 text-blue-800'}`}
               >
                 {isEasyMode ? "Standard Mode" : "Easy Mode"}
               </button>
@@ -521,9 +526,11 @@ function App() {
                 📜 Logs
               </button>
 
-              <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
-                {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
-              </button>
+              {!isEasyMode && (
+                <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
+                  {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -542,7 +549,6 @@ function App() {
           )}
 
           <div className={`relative flex-1 overflow-y-auto p-6 space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
-
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
               <svg className="w-96 h-96 text-stone-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -554,11 +560,7 @@ function App() {
                 <div key={index} className={`flex mb-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] p-4 rounded-2xl ${isEasyMode ? 'text-lg' : 'text-sm'} leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
                     {msg.image && (
-                      <img
-                        src={msg.image}
-                        alt="Uploaded"
-                        className="max-w-full max-h-64 rounded-xl mb-2 object-contain"
-                      />
+                      <img src={msg.image} alt="Uploaded" className="max-w-full max-h-64 rounded-xl mb-2 object-contain" />
                     )}
                     {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
                   </div>
@@ -587,17 +589,17 @@ function App() {
             </div>
           </div>
 
-          <div className={`px-6 pt-4 flex gap-2 overflow-x-auto pb-2 ${showEmergency ? 'bg-red-900' : 'bg-[#FDFCF8]'}`}>
-            <button onClick={() => handleSend(null, "unlock the door")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+          <div className={`px-6 pt-4 flex gap-2 overflow-x-auto pb-2 ${isEasyMode ? 'flex-wrap' : ''} ${showEmergency ? 'bg-red-900' : 'bg-[#FDFCF8]'}`}>
+            <button onClick={() => handleSend(null, "unlock the door")} className={`${isEasyMode ? 'text-base px-4 py-3' : 'text-xs px-3 py-2'} bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-bold whitespace-nowrap transition`}>
               🔒 Unlock Door
             </button>
-            <button onClick={() => handleSend(null, "play music")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+            <button onClick={() => handleSend(null, "play music")} className={`${isEasyMode ? 'text-base px-4 py-3' : 'text-xs px-3 py-2'} bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-bold whitespace-nowrap transition`}>
               🎵 Play Music
             </button>
-            <button onClick={() => handleSend(null, "add family member")} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+            <button onClick={() => handleSend(null, "add family member")} className={`${isEasyMode ? 'text-base px-4 py-3' : 'text-xs px-3 py-2'} bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-bold whitespace-nowrap transition`}>
               👨‍👩‍👧 Add Family
             </button>
-            <button onClick={() => setShowPinModal(true)} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-3 py-2 rounded-lg font-bold whitespace-nowrap transition">
+            <button onClick={() => setShowPinModal(true)} className={`${isEasyMode ? 'text-base px-4 py-3' : 'text-xs px-3 py-2'} bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-bold whitespace-nowrap transition`}>
               📜 View Logs
             </button>
           </div>
@@ -627,16 +629,17 @@ function App() {
               </div>
             )}
 
-            <form onSubmit={handleSend} className="flex gap-3">
+            <form onSubmit={handleSend} className={`flex gap-3 ${isEasyMode ? 'flex-wrap' : ''}`}>
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 aria-label="Take a photo"
                 title="Take a photo"
                 disabled={isLoading}
-                className={`p-4 rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
+                className={`${isEasyMode ? 'p-5 text-xl' : 'p-4'} rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
               >
                 📸
+                {isEasyMode && <span className="block text-sm">Camera</span>}
               </button>
 
               <button
@@ -645,28 +648,30 @@ function App() {
                 aria-label="Choose from gallery"
                 title="Choose from gallery"
                 disabled={isLoading}
-                className={`p-4 rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
+                className={`${isEasyMode ? 'p-5 text-xl' : 'p-4'} rounded-xl transition-all ${showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
               >
                 🖼️
+                {isEasyMode && <span className="block text-sm">Photos</span>}
               </button>
 
               <button
                 type="button"
                 onClick={startListening}
                 disabled={isLoading}
-                className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
+                className={`${isEasyMode ? 'p-5 text-xl' : 'p-4'} rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 00-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
                 </svg>
+                {isEasyMode && <span className="block text-sm">Speak</span>}
               </button>
 
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={pendingImage ? "Ask something about this image..." : "Say: 'Add family member', 'Play lofi', or 'Help'"}
-                className={`flex-1 min-w-0 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`}
+                placeholder={pendingImage ? "Ask something about this image..." : isEasyMode ? "Type your message here..." : "Say: 'Add family member', 'Play lofi', or 'Help'"}
+                className={`flex-1 min-w-0 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all ${isEasyMode ? 'text-lg' : 'text-sm'} ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`}
               />
 
               <button
@@ -675,112 +680,131 @@ function App() {
                 aria-label="Send message"
                 className={`px-6 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                </svg>
+                {isEasyMode ? 'Send' : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                  </svg>
+                )}
               </button>
             </form>
           </div>
         </div>
 
-        <div className={`w-full md:w-1/2 p-6 md:p-8 flex flex-col relative ${showEmergency ? 'bg-red-950' : 'bg-[#F4F1EA]'}`}>
+        <div className="w-full lg:w-1/3 flex flex-col gap-6">
 
-          <div className="mb-8 bg-stone-900 rounded-2xl p-5 shadow-inner h-40 overflow-y-auto font-mono text-xs border border-stone-800">
-            <p className="text-stone-500 mb-3 tracking-widest uppercase text-[10px]">System Security Logs</p>
+          {!isEasyMode && (
+            <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">System Security Logs</h2>
+                <span className="text-xs text-stone-400">Live</span>
+              </div>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {securityLogs.map((log, index) => (
+                  <div key={index} className="flex gap-3 text-xs border-b border-stone-100 pb-3 last:border-0">
+                    <span className="text-stone-400 whitespace-nowrap">{log.time}</span>
+                    <span className="text-stone-700 break-words">{log.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            {messages.map((msg, i) => {
-              const messageText = msg.text || '';
-
-              if (messageText.includes("Playing")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Music playback started.</p>;
-              if (messageText.includes("stopped")) return <p key={i} className="text-stone-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-stone-400 block"></span>[LOW-RISK] Music stopped.</p>;
-              if (messageText.includes("weather")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Weather fetched.</p>;
-              if (messageText.includes("Passphrase verified")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[SECURITY] Owner authenticated.</p>;
-              if (messageText.includes("Voice verification required")) return <p key={i} className="text-blue-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Awaiting passphrase.</p>;
-              if (messageText.includes("Unauthorized")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[SECURITY] Unauthorized access blocked.</p>;
-              if (messageText.includes("Emergency")) return <p key={i} className="text-red-500 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-500 block"></span>[CRITICAL] Emergency protocol engaged!</p>;
-              if (messageText.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
-              if (messageText.includes("vetoed")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
-              if (messageText.includes("approved")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
-              if (messageText.includes("lockdown")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] System Lockdown Initiated!</p>;
-              if (messageText.includes("SILENT SOS")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-ping"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] Silent SOS transmitted!</p>;
-
-              return null;
-            })}
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              Emergency Status
+            </h2>
+            <div className={`flex items-center gap-3 p-4 rounded-xl ${showEmergency ? 'bg-red-100 text-red-800' : 'bg-green-50 text-green-800'}`}>
+              <span className="text-2xl">{showEmergency ? '🚨' : '🛡️'}</span>
+              <div>
+                <p className="font-bold">{showEmergency ? 'Emergency Active' : 'All Systems Safe'}</p>
+                <p className="text-xs opacity-75">{showEmergency ? 'Please check the chat for details.' : 'No emergency detected.'}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              Verification Status
+            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-stone-600">Verification Required</span>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${verificationRequired ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                {verificationRequired ? 'Required' : 'Not Required'}
+              </span>
+            </div>
+          </div>
 
-            {showEmergency && (
-              <div className="bg-red-900 border-2 border-red-500 p-8 rounded-3xl w-full max-w-md text-center shadow-2xl shadow-red-900/50 animate-pulse">
-                <svg className="w-20 h-20 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <h2 className="text-white font-bold text-3xl mb-2 tracking-tight">EMERGENCY ALERT</h2>
-                <p className="text-red-200">Emergency contacts have been notified.</p>
-              </div>
-            )}
-
-            {!showEmergency && showCodeBox && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
-                <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-200">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                  </svg>
-                </div>
-                <h2 className="text-stone-900 font-bold text-2xl mb-2 tracking-tight">Verification Required</h2>
-                <p className="text-stone-500 mb-8 text-sm">Please read this code aloud to proceed.</p>
-                <div className="bg-[#F4F1EA] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-stone-900 font-bold border border-stone-300 shadow-inner">
-                  {generatedCode}
-                </div>
-              </div>
-            )}
-
-            {!showEmergency && showVetoPanel && (
-              <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-in fade-in zoom-in duration-300">
-                <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-200">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                  </svg>
-                </div>
-                <h2 className="text-stone-900 font-bold text-2xl mb-1 tracking-tight">Pending Approval</h2>
-                <p className="text-stone-500 text-sm mb-8">A high-risk action requires your attention.</p>
-
-                <div className="flex gap-4 justify-center">
-                  <button onClick={handleAccept} className="bg-stone-200 hover:bg-stone-300 text-stone-700 px-6 py-4 rounded-xl font-bold w-full transition-all text-sm tracking-wide">
-                    ACCEPT
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              Pending Approval
+            </h2>
+            {pendingApproval ? (
+              <div className="space-y-3">
+                <p className="text-sm text-stone-700">{pendingApproval}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAccept}
+                    className="flex-1 py-3 rounded-lg bg-green-700 hover:bg-green-800 text-white font-bold text-sm"
+                  >
+                    Accept
                   </button>
-                  <button onClick={handleVeto} className="bg-red-800 hover:bg-red-900 text-white px-6 py-4 rounded-xl font-bold w-full shadow-lg shadow-red-800/20 transition-all transform hover:scale-[1.02] text-sm tracking-wide">
-                    VETO
+                  <button
+                    onClick={handleVeto}
+                    className="flex-1 py-3 rounded-lg bg-red-700 hover:bg-red-800 text-white font-bold text-sm"
+                  >
+                    Reject
                   </button>
                 </div>
               </div>
-            )}
-
-            {!showEmergency && !showCodeBox && !showVetoPanel && (
-              <div className="w-full max-w-md space-y-4">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-4">
-                    <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                    </svg>
-                  </div>
-                  <p className="text-lg font-semibold text-stone-700 mb-1">System Secure</p>
-                  <p className="text-sm text-stone-400">No pending risks detected.</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
-                    <p className="text-[10px] text-stone-400 font-bold uppercase mb-1">Active Roles</p>
-                    <p className="text-sm font-bold text-stone-800">{isGuest ? 'Owner + 1 Guest' : 'Owner Only'}</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
-                    <p className="text-[10px] text-stone-400 font-bold uppercase mb-1">System Uptime</p>
-                    <p className="text-sm font-bold text-emerald-600">99.9%</p>
-                  </div>
-                </div>
-              </div>
+            ) : (
+              <p className="text-sm text-stone-500">No pending approvals.</p>
             )}
           </div>
+
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              Secure Status
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-600">System</span>
+                <span className="text-green-700 font-bold text-sm">● Online</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-600">Connection</span>
+                <span className="text-green-700 font-bold text-sm">● Connected</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-600">Security</span>
+                <span className="text-green-700 font-bold text-sm">● Active</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              Active Roles
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-600">Owner</span>
+                <span className="text-xs font-bold text-stone-700">Protected</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-600">Guest</span>
+                <span className="text-xs font-bold text-stone-700">Limited Access</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
+              System Uptime
+            </h2>
+            <p className="text-2xl font-bold text-stone-900">Active</p>
+            <p className="text-xs text-stone-500 mt-1">Guardian Voice is running.</p>
+          </div>
+
         </div>
       </div>
     </div>
