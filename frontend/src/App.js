@@ -14,6 +14,7 @@ function App() {
   const [showEmergency, setShowEmergency] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(""); 
+  const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [threatLevel, setThreatLevel] = useState("LOW");
   const [historyData, setHistoryData] = useState([]);
@@ -43,6 +44,23 @@ function App() {
       utterance.onend = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);
     }
+  };
+
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Voice not supported");
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      handleSend(null, transcript); 
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
   };
 
   const handleImageUpload = async (e) => {
@@ -110,7 +128,7 @@ function App() {
   return (
     <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
       <audio ref={audioRef} />
-      <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
+      <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
 
       {isLockdown && (
         <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse">
@@ -196,7 +214,10 @@ function App() {
           <div className="p-4 bg-[#FDFCF8] border-t border-stone-200">
               <form onSubmit={handleSend} className="flex gap-2">
                 <button type="button" onClick={() => fileInputRef.current.click()} className="p-3 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 border border-stone-300">📷</button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type command..." className="flex-1 bg-[#F4F1EA] border border-stone-300 rounded-xl px-4 py-2 text-stone-900 text-sm focus:outline-none focus:border-teal-700" />
+                <button type="button" onClick={startListening} className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : 'bg-stone-200 text-stone-700 hover:bg-stone-300 border border-stone-300'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </button>
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type or say..." className="flex-1 bg-[#F4F1EA] border border-stone-300 rounded-xl px-4 py-2 text-stone-900 text-sm focus:outline-none focus:border-teal-700" />
                 <button type="submit" className="px-6 py-2 rounded-xl font-bold bg-teal-800 text-white hover:bg-teal-900 shadow-md">Send</button>
               </form>
           </div>

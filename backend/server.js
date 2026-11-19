@@ -9,7 +9,6 @@ app.use(express.json({ limit: '10mb' }));
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODELS = ["gemini-3.5-flash"];
 const ADMIN_PIN = "1234"; 
 
 let db, historyRef;
@@ -104,13 +103,21 @@ app.post('/api/analyze-image', async (req, res) => {
     try {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${GEMINI_API_KEY}`,
-            { contents: [{ parts: [{ text: "You are Guardian Voice. Analyze this image and help the user." }, { inline_data: { mime_type: "image/jpeg", data: base64Data } }] }] }
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            { 
+                contents: [{ 
+                    parts: [
+                        { text: "You are Guardian Voice. Analyze this image and help the user. Keep it short." }, 
+                        { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+                    ] 
+                }] 
+            }
         );
         await saveHistory("Image Analyzed", "SUCCESS", "Owner");
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
     } catch (error) {
-        return res.status(500).json({ reply: "I couldn't analyze the image.", uiUpdate: {} });
+        console.error("Vision API Error:", error.response ? error.response.data : error.message);
+        return res.status(500).json({ reply: "I couldn't analyze the image. (API Limit or Format Issue)", uiUpdate: {} });
     }
 });
 
@@ -188,7 +195,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELS[0]}:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
         );
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
