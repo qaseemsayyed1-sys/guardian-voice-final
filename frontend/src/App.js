@@ -46,12 +46,10 @@ function App() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onloadend = async () => {
-      setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded for Analysis]' }]);
+      setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded]' }]);
       setIsLoading(true);
-      
       try {
         const res = await axios.post(VISION_URL, { imageBase64: reader.result });
         setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
@@ -103,7 +101,7 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#0F172A] text-slate-200'}`}>
+    <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
       <audio ref={audioRef} />
       <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
 
@@ -116,19 +114,19 @@ function App() {
 
       {showHistory && (
         <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
-          <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl border border-slate-700">
+          <div className="bg-[#FDFCF8] p-6 rounded-2xl w-full max-w-md shadow-2xl border border-stone-200">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Persistent Audit Logs</h2>
+              <h2 className="text-xl font-bold text-stone-900">Activity Logs</h2>
               <button onClick={() => setShowHistory(false)} className="text-red-500 font-bold text-xl">✕</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto space-y-2">
               {historyData.map((item, i) => (
-                <div key={i} className="bg-slate-700 p-3 rounded-lg flex justify-between items-center text-sm border border-slate-600">
+                <div key={i} className="bg-white p-3 rounded-lg border border-stone-200 flex justify-between items-center text-sm shadow-sm">
                   <div>
-                    <p className="font-bold text-white">{item.action}</p>
-                    <p className="text-xs text-slate-400">{item.time}</p>
+                    <p className="font-bold text-stone-800">{item.action}</p>
+                    <p className="text-xs text-stone-400">{item.time}</p>
                   </div>
-                  <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('DENIED') || item.status.includes('LOCKDOWN') || item.status.includes('VETO') ? 'bg-red-900 text-red-300' : 'bg-green-900 text-green-300'}`}>{item.status}</span>
+                  <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('DENIED') || item.status.includes('LOCKDOWN') || item.status.includes('VETO') ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>{item.status}</span>
                 </div>
               ))}
             </div>
@@ -136,50 +134,56 @@ function App() {
         </div>
       )}
 
-      <div className="w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-700 flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] bg-[#1E293B]">
+      <div className={`w-full max-w-6xl rounded-3xl shadow-2xl border flex flex-col md:flex-row overflow-hidden min-h-[85vh] md:h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200'}`}>
         
-        <div className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-slate-700">
+        <div className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-stone-200">
           
-          <div className="p-4 md:p-6 border-b border-slate-700 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center bg-[#0F172A]">
+          <div className={`p-4 md:p-6 border-b flex flex-col md:flex-row gap-3 justify-between items-start md:items-center ${showEmergency ? 'bg-red-900 text-white' : 'bg-[#FDFCF8]'}`}>
               <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-blue-600 text-white">
+                  <div className="p-2.5 rounded-xl bg-teal-800 text-white">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                   </div>
                   <div>
-                      <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">Guardian Voice</h1>
-                      <p className="text-[10px] md:text-xs font-medium text-slate-400 uppercase">Enterprise Smart Home Security</p>
+                      <h1 className="text-lg md:text-xl font-bold tracking-tight text-stone-900">Guardian Voice</h1>
+                      <p className="text-[10px] md:text-xs font-medium text-stone-500 uppercase">Secure Smart Home</p>
                   </div>
               </div>
               <div className="flex flex-wrap gap-2 items-center">
-                  <span className={`px-2 py-1 rounded text-[10px] font-bold border ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600' : 'bg-emerald-900 text-emerald-400 border-emerald-700'}`}>Threat: {threatLevel}</span>
-                  <button onClick={fetchHistory} className="text-[10px] bg-slate-700 text-white px-2 py-1.5 rounded-lg font-bold hover:bg-slate-600 border border-slate-600">📜 Logs</button>
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold border ${threatLevel === 'HIGH' ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>Threat: {threatLevel}</span>
+                  <button onClick={fetchHistory} className="text-[10px] bg-stone-200 text-stone-800 px-2 py-1.5 rounded-lg font-bold hover:bg-stone-300 border border-stone-300">📜 Logs</button>
               </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#0F172A]/50">
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-            {isLoading && <div className="text-slate-400 text-xs animate-pulse">Processing...</div>}
-            <div ref={messagesEndRef} />
+          <div className="relative flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#F4F1EA]/50">
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
+                <svg className="w-64 h-64 md:w-96 md:h-96 text-stone-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </div>
+
+            <div className="relative z-10">
+                {messages.map((msg, index) => (
+                  <div key={index} className={`flex mb-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-teal-800 text-white rounded-br-none shadow-md' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm'}`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isLoading && <div className="text-stone-400 text-xs animate-pulse ml-2">Processing...</div>}
+                <div ref={messagesEndRef} />
+            </div>
           </div>
 
-          <div className="p-4 bg-[#0F172A] border-t border-slate-700">
+          <div className="p-4 bg-[#FDFCF8] border-t border-stone-200">
               <form onSubmit={handleSend} className="flex gap-2">
-                <button type="button" onClick={() => fileInputRef.current.click()} className="p-3 rounded-xl bg-slate-700 text-white hover:bg-slate-600">📷</button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Command..." className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500" />
-                <button type="submit" className="px-6 py-2 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-500">Send</button>
+                <button type="button" onClick={() => fileInputRef.current.click()} className="p-3 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 border border-stone-300">📷</button>
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type command..." className="flex-1 bg-[#F4F1EA] border border-stone-300 rounded-xl px-4 py-2 text-stone-900 text-sm focus:outline-none focus:border-teal-700" />
+                <button type="submit" className="px-6 py-2 rounded-xl font-bold bg-teal-800 text-white hover:bg-teal-900 shadow-md">Send</button>
               </form>
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 p-6 flex flex-col bg-[#1E293B]">
-          <div className="bg-[#0F172A] rounded-2xl p-4 h-40 overflow-y-auto font-mono text-xs text-green-400 border border-slate-700 mb-6">
-              <p className="text-slate-500 mb-2">System Security Logs</p>
+        <div className="w-full md:w-1/2 p-6 flex flex-col bg-[#F4F1EA]">
+          <div className="bg-stone-900 rounded-2xl p-4 h-40 overflow-y-auto font-mono text-xs text-emerald-400 border border-stone-800 mb-6 shadow-inner">
+              <p className="text-stone-500 mb-2">System Security Logs</p>
               {messages.map((msg, i) => {
                   if (msg.text.includes("Owner")) return <p key={i} className="mb-1">[SECURITY] Owner Auth</p>;
                   if (msg.text.includes("Unauthorized")) return <p key={i} className="text-red-400 mb-1">[ALERT] Unauthorized Access</p>;
@@ -189,27 +193,34 @@ function App() {
           
           <div className="flex-1 flex flex-col items-center justify-center">
               {showCodeBox && (
-              <div className="bg-slate-800 border border-slate-600 p-8 rounded-3xl w-full max-w-md text-center">
-                  <h2 className="text-white font-bold text-2xl mb-4">Verification Code</h2>
-                  <div className="bg-[#0F172A] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-emerald-400 font-bold border border-slate-700">{generatedCode}</div>
+              <div className="bg-white border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl">
+                  <h2 className="text-stone-900 font-bold text-2xl mb-4">Verification Code</h2>
+                  <div className="bg-[#F4F1EA] py-6 rounded-2xl tracking-[0.5em] text-5xl font-mono text-stone-900 font-bold border border-stone-300">{generatedCode}</div>
               </div>
               )}
 
               {showVetoPanel && (
-              <div className="bg-slate-800 border border-amber-500 p-8 rounded-3xl w-full max-w-md text-center">
-                  <h2 className="text-white font-bold text-2xl mb-2">Pending Approval</h2>
+              <div className="bg-white border border-amber-300 p-8 rounded-3xl w-full max-w-md text-center shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                  <h2 className="text-stone-900 font-bold text-2xl mb-2">Pending Approval</h2>
                   <div className="flex gap-4 mt-6">
-                    <button onClick={() => handleSend(null, 'accept')} className="bg-slate-700 text-white py-3 rounded-xl font-bold w-full">ACCEPT</button>
-                    <button onClick={() => handleSend(null, 'veto')} className="bg-red-600 text-white py-3 rounded-xl font-bold w-full">VETO</button>
+                    <button onClick={() => handleSend(null, 'accept')} className="bg-stone-200 text-stone-800 py-3 rounded-xl font-bold w-full border border-stone-300">ACCEPT</button>
+                    <button onClick={() => handleSend(null, 'veto')} className="bg-red-700 text-white py-3 rounded-xl font-bold w-full shadow-lg">VETO</button>
                   </div>
               </div>
               )}
 
               {!showCodeBox && !showVetoPanel && (
-              <div className="text-center text-slate-500">
-                  <p className="text-xl font-bold text-slate-300 mb-1">System Secure</p>
-                  <p className="text-sm">Monitoring active.</p>
-                  {isGuest && <p className="text-amber-400 mt-4 text-xs font-bold">GUEST MODE ACTIVE</p>}
+              <div className="w-full max-w-md space-y-4">
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 flex flex-col items-center text-center">
+                      <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center shadow-inner border border-stone-100 mb-4 relative">
+                          <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                          <span className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full animate-ping"></span>
+                          <span className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+                      </div>
+                      <p className="text-lg font-semibold text-stone-800 mb-1">System Secure</p>
+                      <p className="text-sm text-stone-500 mb-4">All systems operational.</p>
+                  </div>
+                  {isGuest && <p className="text-amber-600 text-xs font-bold text-center">GUEST MODE ACTIVE</p>}
               </div>
               )}
           </div>
