@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -8,7 +9,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '12mb' }));
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -20,7 +21,7 @@ const GEMINI_MODELS = (
     'gemini-3.5-flash,gemini-3.1-flash-lite'
 ).split(',').map(model => model.trim()).filter(Boolean);
 
-const GEMINI_TIMEOUT = 20000;
+const GEMINI_TIMEOUT = 30000;
 
 let db;
 let historyRef;
@@ -235,7 +236,7 @@ app.post('/api/reset', (req, res) => {
 });
 
 app.post('/api/analyze-image', async (req, res) => {
-    const { imageBase64 } = req.body || {};
+    const { imageBase64, prompt } = req.body || {};
 
     if (!imageBase64 || typeof imageBase64 !== 'string') {
         return res.status(400).json({
@@ -251,35 +252,53 @@ app.post('/api/analyze-image', async (req, res) => {
 
     try {
         const match = imageBase64.match(
-            /^data:(image\/(?:jpeg|jpg|png|webp));base64,([\s\S]+)$/
+            /^data:(image\/(?:jpeg|jpg|png|webp));base64,([\s\S]+)$/i
         );
 
         const mimeType = match
-            ? match[1].replace('image/jpg', 'image/jpeg')
+            ? match[1].toLowerCase().replace('image/jpg', 'image/jpeg')
             : 'image/jpeg';
 
         const base64Data = match
             ? match[2]
             : imageBase64;
 
-        if (!/^[A-Za-z0-9+/=\s]+$/.test(base64Data)) {
+        const cleanBase64 = base64Data.replace(/\s/g, '');
+
+        if (
+            !cleanBase64 ||
+            !/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64)
+        ) {
             return res.status(400).json({
                 error: 'Invalid image data'
             });
         }
 
+        const userPrompt = (
+            typeof prompt === 'string' && prompt.trim()
+        )
+            ? prompt.trim()
+            : 'Describe this image clearly. Identify the main objects, people, text, surroundings, and important details.';
+
         const requestBody = {
+            systemInstruction: {
+                parts: [
+                    {
+                        text: 'You are Guardian Voice, a helpful visual AI assistant. Analyze the supplied image carefully. Answer the user question if one is provided. If no question is provided, describe the image and its important details. Do not claim to identify a person by name from their appearance. Be accurate and concise.'
+                    }
+                ]
+            },
             contents: [
                 {
                     role: 'user',
                     parts: [
                         {
-                            text: 'Describe this image clearly in 2-3 short sentences. Focus on the main objects and important details.'
+                            text: userPrompt
                         },
                         {
                             inline_data: {
                                 mime_type: mimeType,
-                                data: base64Data.replace(/\s/g, '')
+                                data: cleanBase64
                             }
                         }
                     ]
@@ -287,7 +306,7 @@ app.post('/api/analyze-image', async (req, res) => {
             ],
             generationConfig: {
                 temperature: 0.4,
-                maxOutputTokens: 120
+                maxOutputTokens: 512
             }
         };
 
@@ -300,10 +319,14 @@ app.post('/api/analyze-image', async (req, res) => {
             uiUpdate: {}
         });
     } catch (error) {
-        console.error('Image Gemini Error:', error.response?.data || error.message);
+        console.error(
+            'Image Gemini Error:',
+            error.response?.data || error.message
+        );
 
         return res.status(502).json({
             reply: 'Image analysis failed. Please try again.',
+            error: error.message,
             uiUpdate: {}
         });
     }
