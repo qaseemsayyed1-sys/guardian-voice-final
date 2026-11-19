@@ -601,7 +601,7 @@ function App() {
               <div className="mb-4 flex items-start gap-3 p-3 rounded-xl border border-stone-300 bg-[#F4F1EA]">
                 <img
                   src={pendingImage.preview}
-                  alt="Selected photo"
+                  alt="Selected file"
                   className="w-20 h-20 object-cover rounded-lg border border-stone-300"
                 />
                 <div className="flex-1 min-w-0">
