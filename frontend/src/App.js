@@ -25,6 +25,7 @@ function App() {
   const [isLockdown, setIsLockdown] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiStatus, setAiStatus] = useState("Gemini Active");
+  const [isEasyMode, setIsEasyMode] = useState(false);
 
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -509,6 +510,12 @@ function App() {
                   Guest Mode
                 </span>
               )}
+              <button
+                onClick={() => setIsEasyMode(!isEasyMode)}
+                className="px-3 py-2 rounded-lg bg-blue-100 text-blue-800 font-bold text-sm"
+              >
+                {isEasyMode ? "Standard Mode" : "Easy Mode"}
+              </button>
 
               <button onClick={() => setShowPinModal(true)} className={`text-xs px-3 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${showEmergency ? 'bg-red-800 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
                 📜 Logs
