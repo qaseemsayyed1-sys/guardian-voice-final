@@ -101,7 +101,7 @@ app.post('/api/analyze-image', async (req, res) => {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
             { 
                 contents: [{ 
                     parts: [
@@ -120,7 +120,7 @@ app.post('/api/analyze-image', async (req, res) => {
         
     } catch (error) {
         console.error("VISION API ERROR:", error.response ? error.response.data : error.message);
-        return res.status(500).json({ reply: "The AI Vision is temporarily busy. (API Limit Exceeded).", uiUpdate: {} });
+        return res.status(500).json({ reply: "The AI Vision is temporarily busy. Please try again in 1 minute.", uiUpdate: {} });
     }
 });
 
@@ -198,7 +198,7 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
             { contents: [{ role: "user", parts: [{ text: `You are Guardian Voice. User: ${message}` }] }] }
         );
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
