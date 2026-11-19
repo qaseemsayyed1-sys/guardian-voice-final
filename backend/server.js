@@ -50,23 +50,22 @@ const saveHistory = async (action, status, role) => {
     const newEntry = { action, status, role, time: new Date().toLocaleString() };
     if (historyRef) {
         try {
+            console.log("Attempting to save history:", newEntry);
             await historyRef.add({
                 action, status, role,
                 time: admin.firestore.FieldValue.serverTimestamp()
             });
-        } catch (e) { console.error("Firebase Save Error:", e.message); }
+            console.log("History saved successfully!");
+        } catch (e) { 
+            console.error("Firebase Save Error:", e.message); 
+        }
     } else {
         memoryHistory.push(newEntry);
+        console.log("Saved in memory (Firebase not connected).");
     }
 };
 
 app.get('/', (req, res) => res.status(200).send('Guardian Voice Backend running'));
-
-app.post('/api/verify-owner', (req, res) => {
-    const { pin } = req.body;
-    if (pin === ADMIN_PIN) res.status(200).json({ success: true });
-    else res.status(401).json({ success: false, error: "Invalid Owner PIN" });
-});
 
 app.get('/api/history', async (req, res) => {
     const { pin } = req.query;
@@ -84,6 +83,7 @@ app.get('/api/history', async (req, res) => {
             });
             return res.status(200).json(history);
         } catch (error) {
+            console.error("History Fetch Error:", error.message);
             return res.status(500).json({ error: "Failed to fetch history from DB" });
         }
     } else {
