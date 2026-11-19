@@ -119,7 +119,7 @@ app.post('/api/analyze-image', async (req, res) => {
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
         
     } catch (error) {
-        console.error("VISION API ERROR:", error.response ? error.response.data : error.message);
+        console.error("VISION API ERROR:", error.response ? JSON.stringify(error.response.data) : error.message);
         return res.status(500).json({ reply: "The AI Vision is temporarily busy. Please try again in 1 minute.", uiUpdate: {} });
     }
 });
@@ -203,6 +203,7 @@ app.post('/api/chat', async (req, res) => {
         );
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
     } catch (error) {
+        console.error("CHAT API ERROR:", error.response ? JSON.stringify(error.response.data) : error.message);
         return res.status(200).json({ reply: "Running in offline mode.", uiUpdate: {} });
     }
 });
