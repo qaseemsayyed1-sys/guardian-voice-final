@@ -735,8 +735,13 @@ function App() {
                 {verificationRequired ? 'Required' : 'Not Required'}
               </span>
             </div>
+            {generatedCode && (
+              <p className="mt-3 text-lg font-bold text-green-700">
+                Verification Code: {generatedCode}
+              </p>
+            )}
           </div>
-
+          
           <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
             <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
               Pending Approval
