@@ -145,7 +145,7 @@ function App() {
   return (
     <div className={`min-h-screen flex justify-center items-start md:items-center p-2 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
       <audio ref={audioRef} />
-      <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
+      <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
 
       {isLockdown && (
         <div className="fixed inset-0 z-50 bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center animate-pulse">
