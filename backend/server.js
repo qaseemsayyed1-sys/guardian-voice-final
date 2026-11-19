@@ -4,6 +4,7 @@ const axios = require('axios');
 const admin = require('firebase-admin');
 const { cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const { FieldValue } = require('firebase-admin/firestore');
 
 const app = express();
 app.use(cors());
@@ -53,7 +54,7 @@ const saveHistory = async (action, status, role) => {
             console.log("Attempting to save history:", newEntry);
             await historyRef.add({
                 action, status, role,
-                time: admin.firestore.FieldValue.serverTimestamp()
+                time: FieldValue.serverTimestamp()
             });
             console.log("History saved successfully!");
         } catch (e) { 
