@@ -117,7 +117,7 @@ app.post('/api/analyze-image', async (req, res) => {
         return res.status(200).json({ reply: response.data.candidates[0].content.parts[0].text, uiUpdate: {} });
     } catch (error) {
         console.error("Vision API Error:", error.response ? error.response.data : error.message);
-        return res.status(500).json({ reply: "I couldn't analyze the image. (API Limit or Format Issue)", uiUpdate: {} });
+        return res.status(500).json({ reply: "The AI Vision is busy. Please try again later.", uiUpdate: {} });
     }
 });
 

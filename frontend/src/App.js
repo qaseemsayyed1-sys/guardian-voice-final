@@ -63,21 +63,38 @@ function App() {
     recognition.start();
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded]' }]);
-      setIsLoading(true);
-      try {
-        const res = await axios.post(VISION_URL, { imageBase64: reader.result });
-        setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
-        speak(res.data.reply);
-      } catch (error) {
-        setMessages(prev => [...prev, { sender: 'ai', text: 'Error processing image.' }]);
-      }
-      setIsLoading(false);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        setMessages(prev => [...prev, { sender: 'user', text: '📷 [Image Uploaded]' }]);
+        setIsLoading(true);
+        
+        try {
+          const res = await axios.post(VISION_URL, { imageBase64: compressedBase64 });
+          setMessages(prev => [...prev, { sender: 'ai', text: res.data.reply }]);
+          speak(res.data.reply);
+        } catch (error) {
+          setMessages(prev => [...prev, { sender: 'ai', text: 'The AI Vision is currently busy. Please try again.' }]);
+        }
+        setIsLoading(false);
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
