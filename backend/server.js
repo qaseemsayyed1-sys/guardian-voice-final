@@ -4,7 +4,7 @@ const cors = require('cors');
 const axios = require('axios');
 const admin = require('firebase-admin');
 const { cert, getApps, initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 
 const app = express();
 
@@ -189,9 +189,13 @@ app.get('/api/history', async (req, res) => {
 
     if (historyRef) {
         try {
+            const fiveDaysAgo = new Date(
+            Date.now() - 5 * 24 * 60 * 60 * 1000
+                                        );
             const snapshot = await historyRef
+                .where('time', '>=', Timestamp.fromDate(fiveDaysAgo))
                 .orderBy('time', 'desc')
-                .limit(50)
+                .limit(200)
                 .get();
 
             const history = snapshot.docs.map(doc => {
