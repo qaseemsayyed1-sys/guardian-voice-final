@@ -33,6 +33,7 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [ownerPin, setOwnerPin] = useState("");
+  const [verifiedOwnerPin, setVerifiedOwnerPin] = useState("");
 
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -362,37 +363,18 @@ const formatLogTime = (time) => {
 };
 
   
-const fetchHistoryWithPin = async () => {
-  try {
-    const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
 
-    const records = Array.isArray(res.data)
-      ? res.data
-      : res.data.history || [];
+const totalEvents = historyData.length;
 
-    setHistoryData(records);
-    setShowPinModal(false);
-    setShowHistory(true);
-    setOwnerPin("");
-  } catch (error) {
-    alert("Invalid Owner PIN");
-  }
-};
+const approvedEvents = historyData.filter(log =>
+  String(log.status || "").toUpperCase().includes("APPROVED")
+).length;
 
-const refreshHistory = async () => {
-  try {
-    const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
+const vetoedEvents = historyData.filter(log => {
+  const status = String(log.status || "").toUpperCase();
+  return status.includes("VETO") || status.includes("DENIED");
+}).length;
 
-    const records = Array.isArray(res.data)
-      ? res.data
-      : res.data.history || [];
-
-    setHistoryData(records);
-  } catch (error) {
-    alert("History refresh failed. Please verify your PIN again.");
-    setShowPinModal(true);
-  }
-};
 
 
   const runAutoDemo = async () => {
@@ -738,6 +720,32 @@ const refreshHistory = async () => {
         </div>
 
         <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto">
+
+{!isEasyMode && (
+  <div className="grid grid-cols-3 gap-3">
+    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+      <p className="text-xs text-blue-700 font-bold">TOTAL EVENTS</p>
+      <p className="text-3xl font-bold text-blue-900 mt-2">
+        {totalEvents}
+      </p>
+    </div>
+
+    <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm">
+      <p className="text-xs text-green-700 font-bold">APPROVED</p>
+      <p className="text-3xl font-bold text-green-900 mt-2">
+        {approvedEvents}
+      </p>
+    </div>
+
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+      <p className="text-xs text-red-700 font-bold">VETOED</p>
+      <p className="text-3xl font-bold text-red-900 mt-2">
+        {vetoedEvents}
+      </p>
+    </div>
+  </div>
+)}
+
 
           {!isEasyMode && (
             <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
