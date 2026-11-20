@@ -28,7 +28,7 @@ function App() {
   const [isEasyMode, setIsEasyMode] = useState(false);
   const [securityLogs] = useState([]);
   const [verificationRequired] = useState(false);
-  const [pendingApproval] = useState(null);
+  const [pendingApproval, setPendingApproval] = useState(null);
 
   const [historyData, setHistoryData] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -265,6 +265,7 @@ function App() {
         if (data.uiUpdate?.showPending) {
           setShowCodeBox(false);
           setShowVetoPanel(true);
+           setPendingApproval("Door Unlock Request");
         }
 
         if (data.uiUpdate?.clearPending) {
@@ -746,27 +747,43 @@ function App() {
             <h2 className={`${isEasyMode ? 'text-xl' : 'text-sm'} font-bold text-stone-900 uppercase tracking-wider mb-4`}>
               Pending Approval
             </h2>
-            {pendingApproval ? (
-              <div className="space-y-3">
-                <p className="text-sm text-stone-700">{pendingApproval}</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAccept}
-                    className="flex-1 py-3 rounded-lg bg-green-700 hover:bg-green-800 text-white font-bold text-sm"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={handleVeto}
-                    className="flex-1 py-3 rounded-lg bg-red-700 hover:bg-red-800 text-white font-bold text-sm"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-stone-500">No pending approvals.</p>
-            )}
+            {showVetoPanel && pendingApproval ? (
+  <div className="space-y-3">
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+      <p className="font-bold text-amber-800">
+        🔐 Owner Approval Required
+      </p>
+      <p className="text-sm text-stone-700 mt-1">
+        {pendingApproval}
+      </p>
+      <p className="text-xs text-stone-500 mt-1">
+        Verify this request before approving.
+      </p>
+    </div>
+
+    <div className="flex gap-2">
+      <button
+        onClick={handleAccept}
+        disabled={isLoading}
+        className="flex-1 py-3 rounded-lg bg-green-700 hover:bg-green-800 text-white font-bold text-sm disabled:opacity-50"
+      >
+        ✓ Accept
+      </button>
+
+      <button
+        onClick={handleVeto}
+        disabled={isLoading}
+        className="flex-1 py-3 rounded-lg bg-red-700 hover:bg-red-800 text-white font-bold text-sm disabled:opacity-50"
+      >
+        ✕ Veto
+      </button>
+    </div>
+  </div>
+) : (
+  <p className="text-sm text-stone-500">
+    No pending approvals.
+  </p>
+)}
           </div>
 
           <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
