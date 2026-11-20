@@ -424,6 +424,41 @@ const vetoedEvents = historyData.filter(log => {
 
     setIsAutoPlaying(false);
   };
+  const fetchHistoryWithPin = async () => {
+  try {
+    const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
+
+    const records = Array.isArray(res.data)
+      ? res.data
+      : res.data.history || [];
+
+    setHistoryData(records);
+    setVerifiedOwnerPin(ownerPin);
+    setShowPinModal(false);
+    setShowHistory(true);
+    setOwnerPin("");
+  } catch (error) {
+    alert("Invalid Owner PIN");
+  }
+};
+
+const refreshHistory = async () => {
+  try {
+    const res = await axios.get(
+      `${HISTORY_URL}?pin=${verifiedOwnerPin}`
+    );
+
+    const records = Array.isArray(res.data)
+      ? res.data
+      : res.data.history || [];
+
+    setHistoryData(records);
+  } catch (error) {
+    alert("History refresh failed. Please verify your PIN again.");
+    setVerifiedOwnerPin("");
+    setShowPinModal(true);
+  }
+};
 
   return (
     <div className={`min-h-screen flex justify-center items-center p-4 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
