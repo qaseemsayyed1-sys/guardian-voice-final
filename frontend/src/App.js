@@ -361,7 +361,8 @@ const formatLogTime = (time) => {
   return date.toLocaleString();
 };
 
-  const fetchHistoryWithPin = async () => {
+  
+const fetchHistoryWithPin = async () => {
   try {
     const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
 
@@ -377,6 +378,22 @@ const formatLogTime = (time) => {
     alert("Invalid Owner PIN");
   }
 };
+
+const refreshHistory = async () => {
+  try {
+    const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
+
+    const records = Array.isArray(res.data)
+      ? res.data
+      : res.data.history || [];
+
+    setHistoryData(records);
+  } catch (error) {
+    alert("History refresh failed. Please verify your PIN again.");
+    setShowPinModal(true);
+  }
+};
+
 
   const runAutoDemo = async () => {
     if (isAutoPlaying) return;
@@ -724,10 +741,24 @@ const formatLogTime = (time) => {
 
           {!isEasyMode && (
             <div className="bg-[#FDFCF8] border border-stone-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">System Security Logs</h2>
-                <span className="text-xs text-stone-400">Live</span>
-              </div>
+              
+<div className="flex items-center justify-between mb-4">
+  <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
+    System Security Logs
+  </h2>
+
+  <div className="flex items-center gap-3">
+    <button
+      onClick={refreshHistory}
+      className="text-xs font-bold text-blue-700 hover:text-blue-900"
+    >
+      ↻ Refresh
+    </button>
+
+    <span className="text-xs text-stone-400">Live</span>
+  </div>
+</div>
+
               <div className="space-y-3 max-h-64 overflow-y-auto">
                {historyData.length === 0 ? (
   <p className="text-xs text-stone-500">
