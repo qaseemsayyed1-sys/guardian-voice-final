@@ -26,7 +26,6 @@ function App() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiStatus, setAiStatus] = useState("Gemini Active");
   const [isEasyMode, setIsEasyMode] = useState(false);
-  const [securityLogs] = useState([]);
   const [verificationRequired] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(null);
 
@@ -342,17 +341,42 @@ function App() {
       setIsLoading(false);
     }
   };
+const formatLogTime = (time) => {
+  if (!time) return "Time unavailable";
+
+  let date;
+
+  if (time._seconds) {
+    date = new Date(time._seconds * 1000);
+  } else if (time.seconds) {
+    date = new Date(time.seconds * 1000);
+  } else {
+    date = new Date(time);
+  }
+
+  if (Number.isNaN(date.getTime())) {
+    return "Time unavailable";
+  }
+
+  return date.toLocaleString();
+};
 
   const fetchHistoryWithPin = async () => {
-    try {
-      const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
-      setHistoryData(res.data);
-      setShowPinModal(false);
-      setShowHistory(true);
-    } catch (error) {
-      alert("Invalid Owner PIN");
-    }
-  };
+  try {
+    const res = await axios.get(`${HISTORY_URL}?pin=${ownerPin}`);
+
+    const records = Array.isArray(res.data)
+      ? res.data
+      : res.data.history || [];
+
+    setHistoryData(records);
+    setShowPinModal(false);
+    setShowHistory(true);
+    setOwnerPin("");
+  } catch (error) {
+    alert("Invalid Owner PIN");
+  }
+};
 
   const runAutoDemo = async () => {
     if (isAutoPlaying) return;
@@ -471,7 +495,9 @@ function App() {
                   <div key={index} className="bg-white p-3 rounded-lg border border-stone-200 flex justify-between items-center text-sm shadow-sm">
                     <div>
                       <p className="font-bold text-stone-800">{item.action}</p>
-                      <p className="text-xs text-stone-400">{item.role} • {item.time}</p>
+                      <p className="text-xs text-stone-400">
+  {item.role} • {formatLogTime(item.time)}
+</p>
                     </div>
                     <span className={`font-bold text-xs px-2 py-1 rounded ${item.status.includes('VETO') || item.status.includes('LOCKDOWN') || item.status.includes('DENIED') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                       {item.status}
@@ -703,12 +729,42 @@ function App() {
                 <span className="text-xs text-stone-400">Live</span>
               </div>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {securityLogs.map((log, index) => (
-                  <div key={index} className="flex gap-3 text-xs border-b border-stone-100 pb-3 last:border-0">
-                    <span className="text-stone-400 whitespace-nowrap">{log.time}</span>
-                    <span className="text-stone-700 break-words">{log.message}</span>
-                  </div>
-                ))}
+               {historyData.length === 0 ? (
+  <p className="text-xs text-stone-500">
+    Verify Owner PIN using the Logs button to load security history.
+  </p>
+) : (
+  historyData.slice(0, 10).map((log, index) => (
+    <div
+      key={log.id || index}
+      className="flex flex-col gap-1 text-xs border-b border-stone-100 pb-3 last:border-0"
+    >
+      <div className="flex justify-between gap-2">
+        <span className="text-stone-400">
+          {formatLogTime(log.time)}
+        </span>
+
+        <span className={`font-bold ${
+          String(log.status || "").toUpperCase().includes("VETO") ||
+          String(log.status || "").toUpperCase().includes("DENIED") ||
+          String(log.status || "").toUpperCase().includes("LOCKDOWN")
+            ? "text-red-600"
+            : "text-green-700"
+        }`}>
+          {log.status || "Recorded"}
+        </span>
+      </div>
+
+      <p className="text-stone-800 font-semibold">
+        {log.action || "Security Event"}
+      </p>
+
+      <p className="text-stone-500">
+        Role: {log.role || "Unknown"}
+      </p>
+    </div>
+  ))
+)}
               </div>
             </div>
           )}
